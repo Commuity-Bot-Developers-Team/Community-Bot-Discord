@@ -8,6 +8,7 @@ class Information(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.bot.help_command.cog = self
 
     @commands.command()
     async def ping(self, ctx):
