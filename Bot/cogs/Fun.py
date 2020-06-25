@@ -1,9 +1,8 @@
+import asyncio
+import random
+
 import discord
 from discord.ext import commands
-import random
-import datetime
-import asyncio
-
 
 white_page = ":white_large_square:"
 X_Emoji = "<:X_:713988096487850024>"
@@ -21,7 +20,7 @@ bottom_right = '<:DownRightArrow:710738324914176020>'
 
 
 # Generates A embed for Tic Tac Toe Game
-async def get_ttt_embed(player1, player2, data, move_of, final=True):
+async def get_ttt_embed(player1, player2, data, move_of):
     embed = discord.Embed(title=f"Tic Tac Toe {player1.name} vs {player2.name}!!", colour=discord.Color.green())
     data_ = data.copy()
     for i in range(1, 10):
@@ -48,34 +47,34 @@ async def declare_winner(data):
             row.append(data[j])
         game.append(row)
 
-    def declare(game):
+    def declare(game_1):
         # horizontal
-        for row in game:
-            if row.count(row[0]) == len(row) and row[0] != 0:
-                return row[0]
+        for row_1 in game_1:
+            if row_1.count(row_1[0]) == len(row_1) and row_1[0] != 0:
+                return row_1[0]
         # vertical
-        for col in range(len(game[0])):
+        for col in range(len(game_1[0])):
             check = []
-            for row in game:
-                check.append(row[col])
+            for row_1 in game_1:
+                check.append(row_1[col])
             if check.count(check[0]) == len(check) and check[0] != 0:
                 return check[0]
 
         # / diagonal
-        diags = []
-        for idx, reverse_idx in enumerate(reversed(range(len(game)))):
-            diags.append(game[idx][reverse_idx])
+        diagonals = []
+        for idx, reverse_idx in enumerate(reversed(range(len(game_1)))):
+            diagonals.append(game_1[idx][reverse_idx])
 
-        if diags.count(diags[0]) == len(diags) and diags[0] != 0:
-            return diags[0]
+        if diagonals.count(diagonals[0]) == len(diagonals) and diagonals[0] != 0:
+            return diagonals[0]
 
         # \ diagonal
-        diags = []
-        for ix in range(len(game)):
-            diags.append(game[ix][ix])
+        diagonals = []
+        for ix in range(len(game_1)):
+            diagonals.append(game_1[ix][ix])
 
-        if diags.count(diags[0]) == len(diags) and diags[0] != 0:
-            return diags[0]
+        if diagonals.count(diagonals[0]) == len(diagonals) and diagonals[0] != 0:
+            return diagonals[0]
         return None
 
     winner = declare(game)
@@ -86,12 +85,12 @@ class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(help = "Starts a game of Tic Tac Toe that you can play with a friend")
+    @commands.command(help="Starts a game of Tic Tac Toe that you can play with a friend")
     async def ttt(self, ctx, member: discord.Member):
-        if ctx.author  == member:
+        if ctx.author == member:
             return await ctx.send("You cannot play against yourself dude :expressionless:")
-        if member.bot == True:
-            return await ctx.send("You cannot play against a bot :rolling_eyes:")            
+        if member.bot:
+            return await ctx.send("You cannot play against a bot :rolling_eyes:")
         await ctx.send(f"{member.mention} {ctx.author.name} has challenged you to a game of TicTacToe. Accept by typing 'accept'")
         try:
             def check_accept(m):
@@ -120,11 +119,12 @@ class Fun(commands.Cog):
         while True:
             def check(reaction_, user):
                 return user.id == move_of.id and initial_embed.id == reaction_.message.id
+
             try:
                 reaction = await self.bot.wait_for('reaction_add', check=check, timeout=60)
             except asyncio.TimeoutError:
                 await ctx.send(f'Player took too long to respond....')
-                return            
+                return
             str_reaction = str(reaction[0])
             if str_reaction in remaining_moves.keys():
                 data[remaining_moves[str_reaction]] = move_name
@@ -141,17 +141,17 @@ class Fun(commands.Cog):
                 # If moves still remaining
                 if len(remaining_moves.keys()) != 0:
                     await initial_embed.clear_reaction(str_reaction)
-                    
+
                 # Else Generates a Tie Embed
                 else:
                     await initial_embed.clear_reaction(str_reaction)
-                    new_embed = await get_ttt_embed(player1, player2, data, move_of, final=True)
+                    new_embed = await get_ttt_embed(player1, player2, data, move_of)
                     await initial_embed.edit(embed=new_embed)
                     await ctx.send(f'Match between {ctx.author.mention} and {member.mention} is  Draw!')
                     return
             else:
                 # Generates a winner Embed
-                new_embed = await get_ttt_embed(player1, player2, data, move_of, final=True)
+                new_embed = await get_ttt_embed(player1, player2, data, move_of)
                 await initial_embed.edit(embed=new_embed)
                 if winner == 1:
                     await ctx.send(f'{player1.mention} is Winner :crown: Congrats!!')
@@ -159,171 +159,168 @@ class Fun(commands.Cog):
                     await ctx.send(f'{player2.mention} is Winner :crown: Congrats!!')
                 await initial_embed.clear_reactions()
                 return
+
     @ttt.error
-    async def ttt_error(self,ctx, e):
+    async def ttt_error(self, ctx, e):
         if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send(f'{ctx.author.mention} you have to mention a member to play.')
         else:
-            raise    
+            raise
 
-    @commands.command(help = "Starts a game of Guess the Number",aliases = ['gtn'])
-    async def guess(self,ctx):
-        g = discord.Embed(title="Guess the number!!",description = "Between how many numbers do you want to  guess",color=0xFFA500)
-        await ctx.send(embed=g)
+    @commands.command(help="Starts a game of Guess the Number", aliases=['gtn'])
+    async def guess(self, ctx):
+        guess_the_number_embed = discord.Embed(title="Guess the number!!", description="Between how many numbers do you want to  guess", color=0xFFA500)
+        await ctx.send(embed=guess_the_number_embed)
+
         def check(message):
-            return message.author==ctx.author
-        n = await self.bot.wait_for("message", check=check, timeout=30) 
-        l = random.choice(range(1,int(n.content)))
-        ques = discord.Embed(title="Guess the number",description =f"{ctx.author.mention}Guess a number from 1 to {n.content}",color=0xFFA500 )
+            return message.author == ctx.author
+
+        number = await self.bot.wait_for("message", check=check, timeout=30)
+        number_by_pc = random.choice(range(1, int(number.content)))
+        ques = discord.Embed(title="Guess the number", description=f"{ctx.author.mention}Guess a number from 1 to {number.content}", color=0xFFA500)
         ques.set_thumbnail(url="https://www.funbrain.com/assets/img/content-cards/F2qRmLhRnmebc8jJAUjr_GuessTheNumber%403x.png")
-        await ctx.send(embed = ques) 
-        right_ans = discord.Embed(title="Congrats!",description="You guessed it right!",color = 0x008000)
-        right_ans.set_thumbnail(url="https://w7.pngwing.com/pngs/953/440/png-transparent-brown-surprise-party-illustration-emoji-sticker-confetti-party-emoticon-congrats-smiley-symbol-party-popper.png")
-        low_ans = discord.Embed(title="Oops!",description="You guessed it low!",color = 0xFF0000)
+        await ctx.send(embed=ques)
+        right_ans = discord.Embed(title="Congrats!", description="You guessed it right!", color=0x008000)
+        right_ans.set_thumbnail(
+            url="https://w7.pngwing.com/pngs/953/440/png-transparent-brown-surprise-party-illustration-emoji-sticker-confetti-party-emoticon-congrats-smiley-symbol-party-popper.png")
+        low_ans = discord.Embed(title="Oops!", description="You guessed it low!", color=0xFF0000)
         low_ans.set_thumbnail(url="https://i7.pngguru.com/preview/324/861/75/computer-icons-encapsulated-postscript-clip-art-wrong.jpg")
-        high_ans = discord.Embed(title="Oops",description="You guessed it high!",color = 0xFF0000)
+        high_ans = discord.Embed(title="Oops!", description="You guessed it high!", color=0xFF0000)
         high_ans.set_thumbnail(url="https://i7.pngguru.com/preview/324/861/75/computer-icons-encapsulated-postscript-clip-art-wrong.jpg")
-        correct_ans = discord.Embed(title = "Chances used up",description =f"{ctx.author.mention}You have tried 3 times. The correct answer is {l}",color = 0x008000 )
+        correct_ans = discord.Embed(title="Chances used up", description=f"{ctx.author.mention}You have tried 3 times. The correct answer is {number_by_pc}", color=0x008000)
+
         def check(message):
-            return message.author==ctx.author
-    
-    
-        fails=0
-        while fails<3:
-        
+            return message.author == ctx.author
+
+        fails = 0
+        while fails < 3:
+
             ans = await self.bot.wait_for("message", check=check, timeout=30)
             guess = int(ans.content)
-            if guess == l:
+            if guess == number_by_pc:
 
-                await ctx.send(embed= right_ans)
-            elif guess < l:
-                await ctx.send(embed =low_ans  )
-                fails +=1
-            elif guess > l:
-                await ctx.send(embed= high_ans)
-                fails+=1
-        await ctx.send(embed = correct_ans) 
+                await ctx.send(embed=right_ans)
+            elif guess < number_by_pc:
+                await ctx.send(embed=low_ans)
+                fails += 1
+            elif guess > number_by_pc:
+                await ctx.send(embed=high_ans)
+                fails += 1
+        await ctx.send(embed=correct_ans)
 
-    @commands.command(help = "Starts a game of Rock, Paper, Scissors")
-    async def rps(self,ctx):
-        rps_emb = discord.Embed(title="Rock, Paper, Scissors!",color = 0xFF0000 )
-        rps_emb.description = "How many rounds do you want to play?(Enter a number not a word)"
-        rps_emb.set_image(url = "https://www.esquireme.com/public/styles/full_img/public/images/2017/05/29/rock_paper_scissors__2x.png?itok=MW68w59E")
-        await ctx.send(embed = rps_emb)
+    @commands.command(help="Starts a game of Rock, Paper, Scissors")
+    async def rps(self, ctx):
+        rps_emb = discord.Embed(title="Rock, Paper, Scissors!", color=0xFF0000)
+        rps_emb.description = "How many rounds do you want to play? (Enter a number not a word)"
+        rps_emb.set_image(url="https://www.esquireme.com/public/styles/full_img/public/images/2017/05/29/rock_paper_scissors__2x.png?itok=MW68w59E")
+        await ctx.send(embed=rps_emb)
+
         def check(m):
-            return m.author==ctx.author
-        rounds = await self.bot.wait_for("message", check=check, timeout=30)      
-        while rounds :
-                try:
-                        int(rounds.content)
-                except:
-                        await ctx.send("Please enter a number")
-                        rounds = await self.bot.wait_for("message", check=check, timeout=30)  
-                else:
-                        break        
-    
+            return m.author == ctx.author
 
+        rounds = await self.bot.wait_for("message", check=check, timeout=30)
+        while rounds:
+            try:
+                int(rounds.content)
+            except ValueError:
+                await ctx.send("Please enter a number")
+                rounds = await self.bot.wait_for("message", check=check, timeout=30)
+            else:
+                break
 
         rounder = 0
         user = 0
         pc = 0
-        while rounder<int(rounds.content):
-            rounder +=1
-            
-            l = random.choice(['rock','paper','scissors'])
+        while rounder < int(rounds.content):
+            rounder += 1
+
+            pc_response = random.choice(['rock', 'paper', 'scissors'])
             await asyncio.sleep(1)
-            await ctx.send("Choose rock, paper or scissors")  
+            await ctx.send("Choose rock, paper or scissors")
+
             def check(m):
-                    return m.author==ctx.author and m.content in ['rock', 'paper', 'scissors']
-        
-            a = await self.bot.wait_for("message",check=check)
-            await ctx.send(l)
-            if a.content=='rock' and l=='paper':
-                    await ctx.send(f"Ha, you lost!{l} covers {a.content}")
-                    pc +=1
-            
-            elif a.content=='rock' and l=='scissors':
-                    await ctx.send(f"Yaay! you won.{a.content} smashes {l}")
-                    user +=1
-            
-            elif a.content=='rock' and l=='rock':
-                    await ctx.send("Its a tie!")   
-            
-        
-            if a.content=='paper' and l == 'scissors':
-                    await ctx.send(f"Ha, you lost! {l} cuts {a.content}")
-                    pc +=1
-        
-            elif a.content == 'paper' and l=='rock':
-                    await ctx.send(f"Yaay! you won. {a.content} covers {l}")
-                    user +=1
-            
-            elif a.content=='paper' and l=='paper':
-                    await ctx.send("Its a tie!")  
-            
-            
-    
+                return m.author == ctx.author and m.content in ['rock', 'paper', 'scissors']
 
+            human_response = await self.bot.wait_for("message", check=check)
+            await ctx.send(pc_response)
+            if human_response.content == 'rock' and pc_response == 'paper':
+                await ctx.send(f"Ha, you lost!{pc_response} covers {human_response.content}")
+                pc += 1
 
+            elif human_response.content == 'rock' and pc_response == 'scissors':
+                await ctx.send(f"Yaay! you won. {human_response.content} smashes {pc_response}")
+                user += 1
 
-            if(a.content=='scissors' and l=='rock'):
-                    await ctx.send(f"Ha, you lost! {l} smashes {a.content}")
-                    pc +=1
-            
-            elif (a.content=='scissors' and l=='paper'):
-                    await ctx.send(f"Yaay! you won. {a.content} cuts {l}")
-                    user +=1
-            
-            elif(a.content=='scissors' and l=='scissors'):
-                    await ctx.send("Its a tie!")
-            
-            
-        score = f"Score: Player = ``{user}`` \nRobame=``{pc}``"            
-        win_emb = discord.Embed(title = "Player wins the game!!",color = 0xFFFF00)  
-        win_emb.set_image(url = "https://t3.ftcdn.net/jpg/03/03/52/48/240_F_303524879_h1oC0wOJsh8uqo0aZf89lNJg7njTa5A8.jpg") 
+            elif human_response.content == 'rock' and pc_response == 'rock':
+                await ctx.send("Its a tie!")
+
+            if human_response.content == 'paper' and pc_response == 'scissors':
+                await ctx.send(f"Ha, you lost! {pc_response} cuts {human_response.content}")
+                pc += 1
+
+            elif human_response.content == 'paper' and pc_response == 'rock':
+                await ctx.send(f"Yaay! you won. {human_response.content} covers {pc_response}")
+                user += 1
+
+            elif human_response.content == 'paper' and pc_response == 'paper':
+                await ctx.send("Its a tie!")
+
+            if human_response.content == 'scissors' and pc_response == 'rock':
+                await ctx.send(f"Ha, you lost! {pc_response} smashes {human_response.content}")
+                pc += 1
+
+            elif human_response.content == 'scissors' and pc_response == 'paper':
+                await ctx.send(f"Yaay! you won. {human_response.content} cuts {pc_response}")
+                user += 1
+
+            elif human_response.content == 'scissors' and pc_response == 'scissors':
+                await ctx.send("Its a tie!")
+
+        score = f"Score: {ctx.author.display_name.title} = ``{user}`` \n{self.bot.user.name.capitalize} = ``{pc}``"
+        win_emb = discord.Embed(title="Player wins the game!!", color=0xFFFF00)
+        win_emb.set_image(url="https://t3.ftcdn.net/jpg/03/03/52/48/240_F_303524879_h1oC0wOJsh8uqo0aZf89lNJg7njTa5A8.jpg")
         win_emb.description = score
 
-        lose_emb = discord.Embed(title = "Robame wins the game!!", color = 0xFF0000)   
-        lose_emb.description = score     
-        lose_emb.set_image(url="https://media2.giphy.com/media/eJ4j2VnYOZU8qJU3Py/giphy.gif")   
-        tie_emb = discord.Embed(title = "Tie!", color =0xFF0000 ) 
+        lose_emb = discord.Embed(title=f"{self.bot.user.name} wins the game!!", color=0xFF0000)
+        lose_emb.description = score
+        lose_emb.set_image(url="https://media2.giphy.com/media/eJ4j2VnYOZU8qJU3Py/giphy.gif")
+        tie_emb = discord.Embed(title="Tie!", color=0xFF0000)
         tie_emb.set_image(url="https://media.tenor.com/images/c51d80c0a35399d72c37058bce88d02c/tenor.gif")
         tie_emb.description = score
-        if user>pc:
-                await ctx.send(embed = win_emb)
+        if user > pc:
+            await ctx.send(embed=win_emb)
         elif pc > user:
-                await ctx.send(embed = lose_emb)    
+            await ctx.send(embed=lose_emb)
         elif user == pc:
-                await ctx.send(embed = tie_emb)   
+            await ctx.send(embed=tie_emb)
 
-    @commands.command(name="8ball",help = "Starts 8ball game")
-    async def _8ball(self,ctx,args):
-        l = random.choice([ 'As I see it, yes.',
-            'Ask again later.',
-           'Better not tell you now.',
-           'Cannot predict now.',
-            'Concentrate and ask again.',
-            'Don’t count on it.',
-             'It is certain.',
-            'It is decidedly so.',
-            'Most likely.',
-             'My reply is no.',
-            'My sources say no.',
-            'Outlook not so good.',
-             'Outlook good.',
-             'Reply hazy, try again.',
-            'Signs point to yes.',
-            'Very doubtful.',
-            'Without a doubt.',
-            'Yes.',
-            'Yes – definitely.',
-          'You may rely on it.',
+    @commands.command(name="8ball", help="Starts 8ball game")
+    async def _8ball(self, ctx, *, question):
+        response = random.choice(['As I see it, yes.',
+                                  'Ask again later.',
+                                  'Better not tell you now.',
+                                  'Cannot predict now.',
+                                  'Concentrate and ask again.',
+                                  'Don’t count on it.',
+                                  'It is certain.',
+                                  'It is decidedly so.',
+                                  'Most likely.',
+                                  'My reply is no.',
+                                  'My sources say no.',
+                                  'Outlook not so good.',
+                                  'Outlook good.',
+                                  'Reply hazy, try again.',
+                                  'Signs point to yes.',
+                                  'Very doubtful.',
+                                  'Without a doubt.',
+                                  'Yes.',
+                                  'Yes – definitely.',
+                                  'You may rely on it.',
+                                  ])
 
-             ])
-
-        ans = discord.Embed(title="8ball",description = l)
+        ans = discord.Embed(title="8ball", description=f"Question: {question}\n\n Response by me: {response}")
         ans.set_thumbnail(url="https://magic-8ball.com/assets/images/magicBallStart.png")
-        await ctx.send(embed=ans)       
+        await ctx.send(embed=ans)
 
 
 def setup(bot):

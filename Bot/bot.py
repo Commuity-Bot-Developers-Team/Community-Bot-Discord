@@ -18,6 +18,7 @@ class BotClass(commands.AutoShardedBot):
         super(BotClass, self).run(*args, **kwargs)
 
     async def on_ready(self):
+        await self.change_presence(activity=discord.Activity(name="earlbot.xyz", type=discord.ActivityType.listening), status=discord.Status.dnd)
         random_user = random.choice(self.users)
         await self.is_owner(random_user)
         print(f'\n\n{self.user} (id: {self.user.id}) is connected to the following guilds:\n', end="")
