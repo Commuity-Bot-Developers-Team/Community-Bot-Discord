@@ -6,7 +6,8 @@ import discord
 from discord.ext import commands
 # first push trial
 
-class BotClass(commands.Bot):
+
+class BotClass(commands.AutoShardedBot):
     def __init__(self, default_prefix):
         super(BotClass, self).__init__(command_prefix=default_prefix)
         for file in os.listdir('Bot/cogs'):
