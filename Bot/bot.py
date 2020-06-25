@@ -1,9 +1,10 @@
 import os
 import random
-
+from dotenv import load_dotenv
+load_dotenv()
 import discord
 from discord.ext import commands
-
+# first push trial
 
 class BotClass(commands.Bot):
     def __init__(self, default_prefix):
