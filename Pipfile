@@ -7,7 +7,8 @@ verify_ssl = true
 
 [packages]
 discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "master"}
-websockets = "*"
+parsedatetime = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.8"
