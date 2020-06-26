@@ -1,6 +1,6 @@
 import asyncio
 import random
-
+import itertools
 import discord
 from discord.ext import commands
 
@@ -80,7 +80,9 @@ async def declare_winner(data):
     winner = declare(game)
     return winner
 
-
+def get_response(description):
+    embed = discord.Embed(title="8ball",description = description)
+    return embed
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -207,7 +209,7 @@ class Fun(commands.Cog):
                 await ctx.send(embed=high_ans)
                 fails += 1
         await ctx.send(embed=correct_ans)
-
+    
     @commands.command(help="Starts a game of Rock, Paper, Scissors")
     async def rps(self, ctx):
         rps_emb = discord.Embed(title="Rock, Paper, Scissors!", color=0xFF0000)
@@ -317,11 +319,23 @@ class Fun(commands.Cog):
                                   'Yes – definitely.',
                                   'You may rely on it.',
                                   ])
+         
+        ans = discord.Embed(title="8ball", description=f"Question: {question}\n\n  ``.``")
+        
+        msg = await ctx.send(embed=ans)
+        for t, _ in zip(itertools.cycle(range(1, 5)), range(8)):
+            buff = '.'* t
+            await msg.edit(embed=get_response(description=f"Question: {question}\n\n  ``{buff}``"))
+            await asyncio.sleep(0.2)
+        await msg.edit(embed=discord.Embed(title="8ball", description=f"Question: {question}\n\n  ``{response}``").set_thumbnail(url="https://magic-8ball.com/assets/images/magicBallStart.png"))
 
-        ans = discord.Embed(title="8ball", description=f"Question: {question}\n\n Response by me: {response}")
-        ans.set_thumbnail(url="https://magic-8ball.com/assets/images/magicBallStart.png")
-        await ctx.send(embed=ans)
 
+    @_8ball.error
+    async def eightball_error(self, ctx, e):
+        if isinstance(e, commands.MissingRequiredArgument):
+            await ctx.send("Hey there! You have to give an argument or question along with the command :smile:")
+        else:
+            raise
 
 def setup(bot):
     bot.add_cog(Fun(bot))
