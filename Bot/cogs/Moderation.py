@@ -26,7 +26,7 @@ class Moderation(commands.Cog):
     @staticmethod
     async def unban_function(message, targets: List[discord.User], reason):
         for target in targets:
-            message.guild.unban(target, reason=reason)
+            await message.guild.unban(target, reason=reason)
 
     async def mute_function(self, message, targets: List[discord.Member], reason, time=None):
         for target in targets:
@@ -79,6 +79,18 @@ class Moderation(commands.Cog):
         if not members:
             return await ctx.send("You need to say which members needs to unbanned.")
         await self.unban_function(ctx.message, members, reason)
+
+    @commands.command(name="mute")
+    async def mute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to unmuted.")
+        await self.mute_function(ctx.message, targets=members, reason=reason)
+
+    @commands.command(name="tempmute")
+    async def temp_mute_command(self, ctx, time: Optional[str], members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to unmuted.")
+        await self.mute_function(ctx.message, targets=members, reason=reason, time=time)
 
 
 def setup(bot):
