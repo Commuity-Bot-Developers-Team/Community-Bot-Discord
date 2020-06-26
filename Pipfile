@@ -6,10 +6,11 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "master"}
+discord-py = {editable = true,extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "master"}
 parsedatetime = "*"
 python-dotenv = "*"
 asyncpg = "*"
+menus = {editable = true,git = "https://github.com/Rapptz/discord-ext-menus"}
 
 [requires]
 python_version = "3.8"
