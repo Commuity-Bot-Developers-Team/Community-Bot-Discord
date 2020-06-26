@@ -1,11 +1,8 @@
 import asyncio
 import random
-<<<<<<< HEAD
 import itertools
-=======
 
 import aiohttp
->>>>>>> 2cb6212fbb1a91d4b6ad0ebd6f7b5cda20619f52
 import discord
 from discord.ext import commands
 
@@ -324,7 +321,6 @@ class Fun(commands.Cog):
                                   'Yes – definitely.',
                                   'You may rely on it.',
                                   ])
-<<<<<<< HEAD
          
         ans = discord.Embed(title="8ball", description=f"Question: {question}\n\n  ``.``")
         
@@ -342,7 +338,6 @@ class Fun(commands.Cog):
             await ctx.send("Hey there! You have to give an argument or question along with the command :smile:")
         else:
             raise
-=======
 
         ans = discord.Embed(title="8ball", description=f"Question: {question}\n\n Response by me: {response}")
         ans.set_thumbnail(url="https://magic-8ball.com/assets/images/magicBallStart.png")
@@ -366,7 +361,6 @@ class Fun(commands.Cog):
                     else:
                         await ctx.send(f"Error code {request.status} and {image_request.status}: Error")
 
->>>>>>> 2cb6212fbb1a91d4b6ad0ebd6f7b5cda20619f52
 
 def setup(bot):
     bot.add_cog(Fun(bot))
