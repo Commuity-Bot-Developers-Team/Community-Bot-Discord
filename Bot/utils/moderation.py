@@ -17,7 +17,7 @@ class ModerationCommands:
             time_string, context = calendar.parseDT(time, sourceTime=datetime.datetime.utcnow())
             if time_string > datetime.datetime.utcnow():
                 await asyncio.sleep((time_string - datetime.datetime.utcnow()).seconds)
-                await self.unban_function(message, targets, reason)
+                await self.unban_function(message, targets, "Ban timeout")
 
     @staticmethod
     async def unban_function(message, targets: List[discord.User], reason):
@@ -36,7 +36,7 @@ class ModerationCommands:
             time_string, context = calendar.parseDT(time, sourceTime=datetime.datetime.utcnow())
             if time_string > datetime.datetime.utcnow():
                 await asyncio.sleep((time_string - datetime.datetime.utcnow()).seconds)
-                await self.unmute_function(message, targets, reason)
+                await self.unmute_function(message, targets, "Mute timeout")
 
     @staticmethod
     async def unmute_function(message, targets: List[discord.Member], reason):

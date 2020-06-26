@@ -65,3 +65,51 @@ class BotClass(commands.AutoShardedBot):
                 print('\n\n\n', end="")
 
         print(f"\n\nI can view {len(self.users)} members in {len(self.guilds)} guilds.")
+
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if hasattr(ctx.command, 'on_error'):
+            return
+
+        try:
+            if ctx.cog_handler:
+                return
+        except AttributeError:
+            pass
+
+        error = getattr(error, "original", error)
+
+        if isinstance(error, commands.CommandNotFound):
+            await ctx.send("I am not able to find the command, you asked me, in my registered commands list.")
+
+        elif isinstance(error, commands.MissingPermissions):
+            await ctx.send("Sorry, I think you need to ask your server owner or people with role higher than you to give the needed permission.\n"
+                           "These permissions are needed to run the command:\n\n {}".
+                           format('\n'.join([f"{index}. {permission.replace('guild', 'server').replace('_', ' ').title()}"
+                                             for index, permission in enumerate(error.missing_perms, start=1)])))
+
+        elif isinstance(error, commands.CheckAnyFailure):
+            await ctx.send("".join(error.args))
+
+        elif isinstance(error, commands.CheckFailure):
+            await ctx.send("".join(error.args))
+
+        elif isinstance(error, commands.PrivateMessageOnly):
+            await ctx.send("You're only allowed to use this command in Direct or Private Message only!")
+
+        elif isinstance(error, commands.NotOwner):
+            await ctx.send("You're not a owner till now!")
+
+        elif isinstance(error, commands.NoPrivateMessage):
+            await ctx.send("You can't send this commands here!")
+
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(f"The command you send is on cooldown! Try again after {format_duration(int(error.retry_after))}.")
+
+        elif isinstance(error, discord.Forbidden):
+            await ctx.send(error.text)
+
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(f"You missing this required argument: {error.param}")
+
+        else:
+            raise error

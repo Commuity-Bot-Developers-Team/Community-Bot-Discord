@@ -3,7 +3,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from Bot.utils.moderation import ModerationCommands
+from ..utils.moderation import ModerationCommands
 
 
 class Moderation(commands.Cog):
@@ -36,8 +36,8 @@ class Moderation(commands.Cog):
             return await ctx.send("You need to say which members needs to unmuted.")
         await self.moderation_commands.mute_function(ctx.message, targets=members, reason=reason)
 
-    @commands.command(name="mute")
-    async def mute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+    @commands.command(name="unmute")
+    async def unmute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to unmuted.")
         await self.moderation_commands.unmute_function(ctx.message, targets=members, reason=reason)
