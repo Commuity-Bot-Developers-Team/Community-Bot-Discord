@@ -9,6 +9,7 @@ verify_ssl = true
 discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "master"}
 parsedatetime = "*"
 python-dotenv = "*"
+asyncpg = "*"
 
 [requires]
 python_version = "3.8"
