@@ -1,6 +1,7 @@
 import asyncio
 import random
 
+import aiohttp
 import discord
 from discord.ext import commands
 
@@ -321,6 +322,24 @@ class Fun(commands.Cog):
         ans = discord.Embed(title="8ball", description=f"Question: {question}\n\n Response by me: {response}")
         ans.set_thumbnail(url="https://magic-8ball.com/assets/images/magicBallStart.png")
         await ctx.send(embed=ans)
+
+    @commands.command(help="Returns a fact of a passed animal.")
+    async def fact(self, ctx: commands.Context, animal: str):
+        if animal.lower() in ('cat', 'dog', 'panda', 'fox', 'bird', 'koala'):
+            fact_url = f"https://some-random-api.ml/facts/{animal}"
+            image_url = f"https://some-random-api.ml/img/{'birb' if animal == 'bird' else animal}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(fact_url) as request, session.get(image_url) as image_request:
+                    if request.status == 200 and image_request.status == 200:
+                        data = await request.json()
+                        image_data = await image_request.json()
+                        image = image_data['link']
+                        fact = data['fact']
+                        embed = discord.Embed(title=f"{animal.capitalize()} fact", description=fact)
+                        embed.set_image(url=image)
+                        await ctx.send(embed=embed)
+                    else:
+                        await ctx.send(f"Error code {request.status} and {image_request.status}: Error")
 
 
 def setup(bot):
