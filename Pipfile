@@ -11,6 +11,10 @@ parsedatetime = "*"
 python-dotenv = "*"
 asyncpg = "*"
 menus = {editable = true,git = "https://github.com/Rapptz/discord-ext-menus"}
+python-dateutil = "*"
 
 [requires]
 python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true
