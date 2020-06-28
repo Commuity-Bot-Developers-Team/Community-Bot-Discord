@@ -506,7 +506,7 @@ class Economy(commands.Cog):
         print(lb)
 
     @commands.command()
-    @commands.cooldown(1, 50, commands.BucketType.user)
+    @commands.cooldown(1, 20, commands.BucketType.user)
     async def bet(self,ctx, num):
         user = ctx.author.id
         
