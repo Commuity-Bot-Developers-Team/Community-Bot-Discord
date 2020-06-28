@@ -85,7 +85,7 @@ class Starboard(commands.Cog):
                     stars = star_message_row[3] if star_message_row else 0
                     stars += 1
                     print(stars)
-                    if stars == pin:
+                    if stars >= pin:
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         embed = discord.Embed(colour=get_colour(), description=message.content)
                         embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
@@ -145,7 +145,7 @@ class Starboard(commands.Cog):
                     stars = star_message_row[3] if star_message_row else 2
                     stars -= 1
                     print(stars)
-                    if stars == pin:
+                    if stars >= pin:
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         embed = discord.Embed(colour=get_colour(), description=message.content)
                         embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)

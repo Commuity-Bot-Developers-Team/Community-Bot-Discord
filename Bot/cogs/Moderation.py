@@ -33,7 +33,7 @@ class Moderation(commands.Cog):
     @commands.command(name="mute")
     async def mute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
         if not members:
-            return await ctx.send("You need to say which members needs to unmuted.")
+            return await ctx.send("You need to say which members needs to muted.")
         await self.moderation_commands.mute_function(ctx.message, targets=members, reason=reason)
 
     @commands.command(name="unmute")
@@ -43,9 +43,9 @@ class Moderation(commands.Cog):
         await self.moderation_commands.unmute_function(ctx.message, targets=members, reason=reason)
 
     @commands.command(name="tempmute")
-    async def temp_mute_command(self, ctx, time: Optional[str], members: commands.Greedy[discord.Member], *, reason):
+    async def temp_mute_command(self, ctx, members: commands.Greedy[discord.Member], time: Optional[str], *, reason):
         if not members:
-            return await ctx.send("You need to say which members needs to unmuted.")
+            return await ctx.send("You need to say which members needs to muted.")
         await self.moderation_commands.mute_function(ctx.message, targets=members, reason=reason, time=time)
 
     @commands.command(name='tempban')

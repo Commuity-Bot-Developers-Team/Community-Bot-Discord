@@ -3,8 +3,9 @@ import random
 
 import asyncpg
 import discord
-from discord.ext import commands
-# first push trial
+from discord.ext import commands, tasks
+
+from .utils.time_bot import format_duration
 
 
 class BotClass(commands.AutoShardedBot):
@@ -15,7 +16,10 @@ class BotClass(commands.AutoShardedBot):
 
         # calling super class
         super(BotClass, self).__init__(command_prefix=default_prefix)
+
+        # creating instance variables
         self.pg_conn = None
+        self.start_number = 1000000000000000
 
         # loading cogs
         for file in os.listdir('Bot/cogs'):
@@ -24,6 +28,9 @@ class BotClass(commands.AutoShardedBot):
 
         # connecting to database
         self.loop.run_until_complete(self.connection_of_postgres())
+
+        # start the tasks
+        self.update_count_data_according_to_guild.start()
 
     async def get_prefix(self, message):
         if message.channel.type == discord.ChannelType.private:
@@ -113,3 +120,17 @@ class BotClass(commands.AutoShardedBot):
 
         else:
             raise error
+
+    @tasks.loop(seconds=10)
+    async def update_count_data_according_to_guild(self):
+        await self.wait_until_ready()
+        id_data = await self.pg_conn.fetchrow("""
+            SELECT * FROM id_data
+            WHERE row_id = 1
+            """)
+        if not id_data:
+            await self.pg_conn.execute("""
+                INSERT INTO id_data
+                VALUES ($1, $1, $1, $1, $1, $1, 1)
+                """, self.start_number)
+
