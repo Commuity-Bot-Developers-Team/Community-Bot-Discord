@@ -53,7 +53,11 @@ class Moderation(commands.Cog):
         if not members:
             return await ctx.send("You need to say which members needs to temporarily banned.")
         await self.moderation_commands.ban_function(message=ctx.message, targets=members, reason=reason, time=time)
-
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def clear(self,ctx,limit):
+        await ctx.message.delete()
+        await ctx.channel.purge(limit = int(limit))
 
 def setup(bot):
     bot.add_cog(Moderation(bot))

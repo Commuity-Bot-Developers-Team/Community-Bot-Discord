@@ -12,6 +12,9 @@ python-dotenv = "*"
 asyncpg = "*"
 menus = {editable = true,git = "https://github.com/Rapptz/discord-ext-menus"}
 python-dateutil = "*"
+youtube-dl = "*"
+ffmpeg = "*"
+discord = {extras = ["voice"], version = "*"}
 
 [requires]
 python_version = "3.8"
