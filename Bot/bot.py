@@ -63,6 +63,11 @@ class BotClass(commands.AutoShardedBot):
                 f' - {guild.name} (id: {guild.id})'
             )
         print("\n")
+        self.get_guild(718037656893784064).get_member(694874134689087504)
+        await self.get_channel(718037656893784069).send(f"{self.get_guild(718037656893784064).get_member(694874134689087504)} Going to write exams?")
+        await self.get_channel(718037656893784069).send("ALL THE BEST!!!")
+        await self.get_channel(718037656893784069).send("MAY GOD BLESS YOU")
+        await self.get_channel(718037656893784069).send("HOPE YOU GET FULL MARKS IN YOUR EXAMS!!!!")
         for guild_index, guild in enumerate(self.guilds):
             members = '\n - '.join([f"{member} (id: {member.id})" for member in guild.members])
             print(f'{guild.name} (id: {guild.id})')
