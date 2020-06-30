@@ -21,6 +21,7 @@ class BotClass(commands.AutoShardedBot):
         # creating instance variables
         self.pg_conn = None
         self.start_number = 1000000000000000
+        self.init_cogs = [f'Bot.cogs.{filename[:-3]}' for filename in os.listdir('Bot/cogs') if filename.endswith('.py')]
 
         # loading cogs
         for file in os.listdir('Bot/cogs'):
@@ -32,6 +33,7 @@ class BotClass(commands.AutoShardedBot):
 
         # start the tasks
         self.update_count_data_according_to_guild.start()
+        self.add_guild_to_db.start()
 
     async def get_prefix(self, message):
         if message.channel.type == discord.ChannelType.private:
@@ -142,4 +144,18 @@ class BotClass(commands.AutoShardedBot):
                 INSERT INTO id_data
                 VALUES ($1, $1, $1, $1, $1, $1, 1)
                 """, self.start_number)
+
+    @tasks.loop(seconds=10)
+    async def add_guild_to_db(self):
+        await self.wait_until_ready()
+        for guild in self.guilds:
+            guild_data = await self.pg_conn.fetchrow("""
+            SELECT * FROM cogs_data
+            WHERE guild_id = $1
+            """, guild.id)
+            if not guild_data:
+                await self.pg_conn.execute("""
+                INSERT INTO cogs_data (guild_id, enabled, disabled)
+                VALUES ($1, $2, $3)
+                """, guild.id, self.init_cogs, ["None"])
 
