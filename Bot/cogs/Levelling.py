@@ -962,7 +962,7 @@ class Levelling(commands.Cog):
                             """, ctx.guild.id, whitelisted_channels)
         await ctx.send(f"Removed whitelist for channel {channel.mention}.")
 
-    @commands.group(aliases=['lblr', 'lvl_blr'], help="Returns all level up messages of this server.")
+    @commands.group(aliases=['lwlr', 'lvl_wlr'], help="Returns all level up messages of this server.")
     async def leveling_whitelist_role(self, ctx: commands.Context):
         whitelisted_roles = await self.bot.pg_conn.fetchval("""
             SELECT whitelist_roles FROM leveling_blacklist_data
