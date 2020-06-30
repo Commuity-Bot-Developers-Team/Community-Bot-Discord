@@ -8,7 +8,7 @@ class System(commands.Cog):
         self.bot = bot
 
     async def cog_check(self, ctx):
-        return self.bot.is_owner(ctx.author)
+        return await self.bot.is_owner(ctx.author)
 
     @commands.group(name='extension', aliases=['ext'])
     async def ext(self, ctx: commands.Context):
