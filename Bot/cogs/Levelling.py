@@ -99,28 +99,40 @@ class Levelling(commands.Cog):
         SELECT blacklist_roles FROM leveling_blacklist_data
         WHERE guild_id = $1 AND "blacklist?" = TRUE
         """, guild.id)
-        return await convert_to(blacklist_roles_ids, Converters.role_converter, guild)
+        if blacklist_roles_ids:
+            return await convert_to(blacklist_roles_ids, Converters.role_converter, guild)
+        else:
+            return []
 
     async def get_whitelist_roles_for(self, guild):
         whitelist_roles_ids = await self.bot.pg_conn.fetchval("""
         SELECT whitelist_roles FROM leveling_blacklist_data
         WHERE guild_id = $1 AND "whitelist?" = TRUE
         """, guild.id)
-        return await convert_to(whitelist_roles_ids, Converters.role_converter, guild)
+        if whitelist_roles_ids:
+            return await convert_to(whitelist_roles_ids, Converters.role_converter, guild)
+        else:
+            return []
 
     async def get_whitelist_channels_for(self, guild):
         whitelist_channel_ids = await self.bot.pg_conn.fetchval("""
         SELECT whitelist_roles FROM leveling_blacklist_data
         WHERE guild_id = $1 AND "whitelist?" = TRUE
         """, guild.id)
-        return await convert_to(whitelist_channel_ids, Converters.channel_converter, guild)
+        if whitelist_channel_ids:
+            return await convert_to(whitelist_channel_ids, Converters.channel_converter, guild)
+        else:
+            return []
 
     async def get_blacklist_channels_for(self, guild):
         blacklist_channel_ids = await self.bot.pg_conn.fetchval("""
         SELECT whitelist_roles FROM leveling_blacklist_data
         WHERE guild_id = $1 AND "whitelist?" = TRUE
         """, guild.id)
-        return await convert_to(blacklist_channel_ids, Converters.channel_converter, guild)
+        if blacklist_channel_ids:
+            return await convert_to(blacklist_channel_ids, Converters.channel_converter, guild)
+        else:
+            return []
 
     # level up message helper funcs
     async def get_destination_for_level_up_messages(self, message: discord.Message) -> Optional[discord.TextChannel]:
@@ -314,7 +326,7 @@ class Levelling(commands.Cog):
                 """, message.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             if not isinstance(message.author, discord.User):
-                if message.channel.type != discord.ChannelType.private and (self.check_whitelist_channel_or_role(message) or not self.check_blacklist_channel_or_role(message)):
+                if message.channel.type != discord.ChannelType.private and (await self.check_whitelist_channel_or_role(message) or not await self.check_blacklist_channel_or_role(message)):
                     if (int(time.time()) - await self.get_last_message_time(message.author)) > 1 and not str(message.content).startswith(tuple(await self.bot.get_prefix(message))):
                         await self.update_data(message.author)
                         if discord.utils.find(lambda r: r.name == 'Respected People', message.guild.roles) not in message.author.roles and message.author.bot is False:
@@ -787,6 +799,222 @@ class Levelling(commands.Cog):
                     WHERE guild_id = $1 AND name = $3
                     """, ctx.guild.id, new_name, name)
         await ctx.send(f"Updated name for leveling role set {name}")
+
+    @commands.group(aliases=['lblr', 'lvl_blr'], help="Returns all level up messages of this server.")
+    async def leveling_blacklist_role(self, ctx: commands.Context):
+        blacklisted_roles = await self.bot.pg_conn.fetchval("""
+            SELECT blacklist_roles FROM leveling_blacklist_data
+            WHERE guild_id = $1
+            """, ctx.guild.id)
+        if not blacklisted_roles:
+            await self.bot.pg_conn.execute("""
+                INSERT INTO leveling_message_destination_data (guild_id)
+                VALUES ($1)
+                """, ctx.guild.id)
+        embed = discord.Embed(title="Available blacklists for roles.")
+        msg = ""
+        for index, message in enumerate(blacklisted_roles, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_blacklist_role.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_blacklist_role_add(self, ctx: commands.Context, role: discord.Role):
+        blacklisted_roles = await self.bot.pg_conn.fetchval("""
+                    SELECT blacklist_roles FROM leveling_blacklist_data
+                    WHERE guild_id = $1
+                    """, ctx.guild.id)
+        if not blacklisted_roles:
+            blacklisted_roles = []
+        blacklisted_roles = await convert_to(blacklisted_roles, Converters.role_converter, ctx.guild)
+        blacklisted_roles, role_1, _ = insert_or_append(blacklisted_roles, role)
+        await self.bot.pg_conn.execute("""
+            UPDATE leveling_blacklist_data
+            SET blacklist_roles = $2
+            WHERE guild_id = $1
+            """, ctx.guild.id, blacklisted_roles)
+        await ctx.send(f"Added blacklist for role {role.mention}.")
+
+    @leveling_blacklist_role.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def level_blacklist_role_remove(self, ctx: commands.Context, role: discord.Role):
+        blacklisted_roles = await self.bot.pg_conn.fetchval("""
+                            SELECT blacklist_roles FROM leveling_blacklist_data
+                            WHERE guild_id = $1
+                            """, ctx.guild.id)
+        if not blacklisted_roles:
+            blacklisted_roles = []
+        blacklisted_roles, role_1, _ = pop_or_remove(blacklisted_roles, role)
+        await self.bot.pg_conn.execute("""
+                    UPDATE leveling_blacklist_data
+                    SET blacklist_roles = $2
+                    WHERE guild_id = $1
+                    """, ctx.guild.id, blacklisted_roles)
+        await ctx.send(f"Removed blacklist for role {role.mention}.")
+
+    @commands.group(aliases=['lblc', 'lvl_blc'], help="Returns all level up messages of this server.")
+    async def leveling_blacklist_channel(self, ctx: commands.Context):
+        blacklisted_channels = await self.bot.pg_conn.fetchval("""
+                SELECT blacklist_channels FROM leveling_blacklist_data
+                WHERE guild_id = $1
+                """, ctx.guild.id)
+        if not blacklisted_channels:
+            await self.bot.pg_conn.execute("""
+                    INSERT INTO leveling_message_destination_data (guild_id)
+                    VALUES ($1)
+                    """, ctx.guild.id)
+        embed = discord.Embed(title="Available blacklists for channels.")
+        msg = ""
+        for index, message in enumerate(blacklisted_channels, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_blacklist_channel.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_blacklist_channel_add(self, ctx: commands.Context, channel: discord.Role):
+        blacklisted_channels = await self.bot.pg_conn.fetchval("""
+                        SELECT blacklist_channels FROM leveling_blacklist_data
+                        WHERE guild_id = $1
+                        """, ctx.guild.id)
+        if not blacklisted_channels:
+            blacklisted_channels = []
+        blacklisted_channels = await convert_to(blacklisted_channels, Converters.channel_converter, ctx.guild)
+        blacklisted_channels, channel_1, _ = insert_or_append(blacklisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                UPDATE leveling_blacklist_data
+                SET blacklist_channels = $2
+                WHERE guild_id = $1
+                """, ctx.guild.id, blacklisted_channels)
+        await ctx.send(f"Added blacklist for channel {channel.mention}.")
+
+    @leveling_blacklist_channel.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def leveling_blacklist_channel_remove(self, ctx: commands.Context, channel: discord.Role):
+        blacklisted_channels = await self.bot.pg_conn.fetchval("""
+                                SELECT blacklist_channels FROM leveling_blacklist_data
+                                WHERE guild_id = $1
+                                """, ctx.guild.id)
+        if not blacklisted_channels:
+            blacklisted_channels = []
+        blacklisted_channels, channel_1, _ = pop_or_remove(blacklisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                        UPDATE leveling_blacklist_data
+                        SET blacklist_channels = $2
+                        WHERE guild_id = $1
+                        """, ctx.guild.id, blacklisted_channels)
+        await ctx.send(f"Removed blacklist for channel {channel.mention}.")
+
+    @commands.group(aliases=['lwlc', 'lvl_wlc'], help="Returns all level up messages of this server.")
+    async def leveling_whitelist_channel(self, ctx: commands.Context):
+        whitelisted_channels = await self.bot.pg_conn.fetchval("""
+                    SELECT whitelist_channels FROM leveling_blacklist_data
+                    WHERE guild_id = $1
+                    """, ctx.guild.id)
+        if not whitelisted_channels:
+            await self.bot.pg_conn.execute("""
+                        INSERT INTO leveling_message_destination_data (guild_id)
+                        VALUES ($1)
+                        """, ctx.guild.id)
+        embed = discord.Embed(title="Available whitelists for channels.")
+        msg = ""
+        for index, message in enumerate(whitelisted_channels, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_whitelist_channel.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_whitelist_channel_add(self, ctx: commands.Context, channel: discord.Role):
+        whitelisted_channels = await self.bot.pg_conn.fetchval("""
+                            SELECT whitelist_channels FROM leveling_blacklist_data
+                            WHERE guild_id = $1
+                            """, ctx.guild.id)
+        if not whitelisted_channels:
+            whitelisted_channels = []
+        whitelisted_channels = await convert_to(whitelisted_channels, Converters.channel_converter, ctx.guild)
+        whitelisted_channels, channel_1, _ = insert_or_append(whitelisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                    UPDATE leveling_blacklist_data
+                    SET whitelist_channels = $2
+                    WHERE guild_id = $1
+                    """, ctx.guild.id, whitelisted_channels)
+        await ctx.send(f"Added whitelist for channel {channel.mention}.")
+
+    @leveling_whitelist_channel.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def level_up_message_remove(self, ctx: commands.Context, channel: discord.Role):
+        whitelisted_channels = await self.bot.pg_conn.fetchval("""
+                                    SELECT whitelist_channels FROM leveling_blacklist_data
+                                    WHERE guild_id = $1
+                                    """, ctx.guild.id)
+        if not whitelisted_channels:
+            whitelisted_channels = []
+        whitelisted_channels, channel_1, _ = pop_or_remove(whitelisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                            UPDATE leveling_blacklist_data
+                            SET whitelist_channels = $2
+                            WHERE guild_id = $1
+                            """, ctx.guild.id, whitelisted_channels)
+        await ctx.send(f"Removed whitelist for channel {channel.mention}.")
+
+    @commands.group(aliases=['lblr', 'lvl_blr'], help="Returns all level up messages of this server.")
+    async def leveling_whitelist_role(self, ctx: commands.Context):
+        whitelisted_roles = await self.bot.pg_conn.fetchval("""
+            SELECT whitelist_roles FROM leveling_blacklist_data
+            WHERE guild_id = $1
+            """, ctx.guild.id)
+        if not whitelisted_roles:
+            await self.bot.pg_conn.execute("""
+                INSERT INTO leveling_message_destination_data (guild_id)
+                VALUES ($1)
+                """, ctx.guild.id)
+        embed = discord.Embed(title="Available whitelists for roles.")
+        msg = ""
+        for index, message in enumerate(whitelisted_roles, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_whitelist_role.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_whitelist_role_add(self, ctx: commands.Context, role: discord.Role):
+        whitelisted_roles = await self.bot.pg_conn.fetchval("""
+                    SELECT whitelist_roles FROM leveling_blacklist_data
+                    WHERE guild_id = $1
+                    """, ctx.guild.id)
+        if not whitelisted_roles:
+            whitelisted_roles = []
+        whitelisted_roles = await convert_to(whitelisted_roles, Converters.role_converter, ctx.guild)
+        whitelisted_roles, role_1, _ = insert_or_append(whitelisted_roles, role)
+        await self.bot.pg_conn.execute("""
+            UPDATE leveling_blacklist_data
+            SET whitelist_roles = $2
+            WHERE guild_id = $1
+            """, ctx.guild.id, whitelisted_roles)
+        await ctx.send(f"Added whitelist for role {role.mention}.")
+
+    @leveling_whitelist_role.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def level_whitelist_role_remove(self, ctx: commands.Context, role: discord.Role):
+        whitelisted_roles = await self.bot.pg_conn.fetchval("""
+                            SELECT whitelist_roles FROM leveling_blacklist_data
+                            WHERE guild_id = $1
+                            """, ctx.guild.id)
+        if not whitelisted_roles:
+            whitelisted_roles = []
+        whitelisted_roles, role_1, _ = pop_or_remove(whitelisted_roles, role)
+        await self.bot.pg_conn.execute("""
+                    UPDATE leveling_blacklist_data
+                    SET whitelist_roles = $2
+                    WHERE guild_id = $1
+                    """, ctx.guild.id, whitelisted_roles)
+        await ctx.send(f"Removed whitelist for role {role.mention}.")
 
 
 def setup(bot):
