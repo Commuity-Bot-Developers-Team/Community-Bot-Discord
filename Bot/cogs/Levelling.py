@@ -295,16 +295,18 @@ class Levelling(commands.Cog):
             return None
 
     async def get_level(self, member: discord.Member):
-        return await self.bot.pg_conn.fetchval("""
+        level = await self.bot.pg_conn.fetchval("""
         SELECT level FROM leveling_data
         WHERE guild_id = $1 AND user_id = $2
         """, member.guild.id, member.id)
+        return level if level else 0
 
     async def get_xps(self, member: discord.Member):
-        return await self.bot.pg_conn.fetchval("""
+        xps = await self.bot.pg_conn.fetchval("""
         SELECT xps FROM leveling_data
         WHERE guild_id = $1 AND user_id = $2
         """, member.guild.id, member.id)
+        return xps if xps else 0
 
     async def set_level(self, member: discord.Member, level: int):
         await self.bot.pg_conn.execute("""
