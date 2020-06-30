@@ -119,7 +119,6 @@ To change, add, remove or get the prefix:
          SELECT enabled FROM cogs_data
          WHERE guild_id = $1
          """, ctx.guild.id)
-        print(enabled)
         embed = discord.Embed()
         embed.title = "Enabled modules of this server!"
         msg = ''
@@ -142,33 +141,36 @@ To change, add, remove or get the prefix:
          WHERE guild_id = $1
          """, ctx.guild.id)
         plugin_to_enable = f"Bot.cogs.{plugin_ext.replace('_', ' ').title().replace(' ', '_')}"
-        if plugin_to_enable in enabled:
-            return await ctx.send("Plugin already enabled!")
-        else:
-            try:
-                disabled.remove(plugin_to_enable)
-            except ValueError:
-                pass
-            enabled.append(plugin_to_enable)
-            # await ctx.send("Plugin enabled successfully")
-            try:
-                if enabled:
-                    enabled.remove("None")
-            except ValueError:
-                pass
-            try:
-                if not disabled:
-                    disabled.append("None")
-            except ValueError:
-                pass
+        if plugin_to_enable in self.bot.init_cogs:
+            if plugin_to_enable in enabled:
+                return await ctx.send("Plugin already enabled!")
+            else:
+                try:
+                    disabled.remove(plugin_to_enable)
+                except ValueError:
+                    pass
+                enabled.append(plugin_to_enable)
+                # await ctx.send("Plugin enabled successfully")
+                try:
+                    if enabled:
+                        enabled.remove("None")
+                except ValueError:
+                    pass
+                try:
+                    if not disabled:
+                        disabled.append("None")
+                except ValueError:
+                    pass
 
-        await self.bot.pg_conn.execute("""
-            UPDATE cogs_data 
-            SET enabled = $2,
-                disabled = $3
-            WHERE guild_id = $1
-        """, ctx.guild.id, enabled, disabled)
-        await ctx.send("Plugin enabled successfully")
+            await self.bot.pg_conn.execute("""
+                UPDATE cogs_data 
+                SET enabled = $2,
+                    disabled = $3
+                WHERE guild_id = $1
+            """, ctx.guild.id, enabled, disabled)
+            await ctx.send("Plugin enabled successfully")
+        else:
+            await ctx.send(f"No plugin named {plugin_ext} found in my list of plugins. Try again with correct name!")
 
     @plugin.command(name="disable", help="Disables given plugin!", aliases=['-'])
     @commands.check_any(is_guild_owner(), commands.is_owner(), is_administrator_or_permission(administrator=True))
@@ -182,32 +184,35 @@ To change, add, remove or get the prefix:
          WHERE guild_id = $1
          """, ctx.guild.id)
         plugin_to_disable = f"Bot.cogs.{plugin_ext.replace('_', ' ').title().replace(' ', '_')}"
-        if plugin_to_disable in disabled:
-            return await ctx.send("Plugin already disabled!")
-        else:
-            try:
-                enabled.remove(plugin_to_disable)
-            except ValueError:
-                pass
-            disabled.append(plugin_to_disable)
-            try:
-                if disabled:
-                    disabled.remove("None")
-            except ValueError:
-                pass
-            try:
-                if not enabled:
-                    enabled.append("None")
-            except ValueError:
-                pass
+        if plugin_to_disable in self.bot.init_cogs:
+            if plugin_to_disable in disabled:
+                return await ctx.send("Plugin already disabled!")
+            else:
+                try:
+                    enabled.remove(plugin_to_disable)
+                except ValueError:
+                    pass
+                disabled.append(plugin_to_disable)
+                try:
+                    if disabled:
+                        disabled.remove("None")
+                except ValueError:
+                    pass
+                try:
+                    if not enabled:
+                        enabled.append("None")
+                except ValueError:
+                    pass
 
-        await self.bot.pg_conn.execute("""
-            UPDATE cogs_data 
-            SET enabled = $2,
-                disabled = $3
-            WHERE guild_id = $1
-            """, ctx.guild.id, enabled, disabled)
-        await ctx.send("Plugin disabled successfully")
+            await self.bot.pg_conn.execute("""
+                UPDATE cogs_data 
+                SET enabled = $2,
+                    disabled = $3
+                WHERE guild_id = $1
+                """, ctx.guild.id, enabled, disabled)
+            await ctx.send("Plugin disabled successfully")
+        else:
+            await ctx.send(f"No plugin named {plugin_ext} found in my list of plugins. Try again with correct name!")
 
 
 def setup(bot):
