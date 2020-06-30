@@ -20,11 +20,10 @@ class Economy(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        member_id = member.id
-        check = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = ?", (member_id,))
+        check = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = $1", member.id)
 
         if not check:
-            await self.bot.pg_conn.execute("INSERT INTO users_data (coins,xp,level,user_id,passive,bank,bread,messages) VALUES (0,0,0,$1,'off',0,0,0)", member_id)
+            await self.bot.pg_conn.execute("INSERT INTO users_data (coins,xp,level,user_id,passive,bank,bread,messages) VALUES (0,0,0,$1,'off',0,0,0)", member.id)
 
     @commands.command()
     async def bal(self, ctx):
@@ -202,8 +201,8 @@ class Economy(commands.Cog):
             )
             await ctx.send(embed=e)
 
-    @commands.command()
-    async def level(self, ctx):
+    @commands.command(name="eco_level")
+    async def eco_level(self, ctx):
         user = ctx.author.id
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
         level = user_info["level"]
@@ -463,8 +462,8 @@ class Economy(commands.Cog):
                         value=f"Buy amazing stuff!", inline=True)
         await ctx.send(embed=embed)
 
-    @commands.command()
-    async def leaderboard(self, ctx):
+    @commands.command(name="eco_leaderboard")
+    async def eco_leaderboard(self, ctx):
         members = ctx.guild.members
         i_d = [member.id for member in members]
         lb = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = ANY($1::BIGINT[]) ORDER BY coins DESC LIMIT 5 ", i_d)

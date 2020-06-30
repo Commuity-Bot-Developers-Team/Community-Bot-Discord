@@ -7,8 +7,10 @@ class System(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def cog_check(self, ctx):
+        return self.bot.is_owner(ctx.author)
+
     @commands.group(name='extension', aliases=['ext'])
-    @commands.is_owner()
     async def ext(self, ctx: commands.Context):
         pass
 

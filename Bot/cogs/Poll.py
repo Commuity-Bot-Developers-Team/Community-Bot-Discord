@@ -7,6 +7,17 @@ class Poll(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def cog_check(self, ctx):
+        if ctx.channel.type == discord.ChannelType.private:
+            return True
+        enabled = await self.bot.pg_conn.fetchval("""
+                SELECT enabled FROM cogs_data
+                WHERE guild_id = $1
+                """, ctx.guild.id)
+        if f"Bot.cogs.{self.qualified_name}" in enabled:
+            return True
+        return False
+
     @commands.command(help="Creates a polls with a question and answer.", usage="<question_and_answer_separated_by_commas_or_pipes>")
     async def polls(self, ctx: commands.Context, *, q_and_a):
         question = str(q_and_a).split(", " if ", " in q_and_a else "| ")[0]

@@ -9,8 +9,9 @@ from .utils.time_bot import format_duration
 
 
 class BotClass(commands.AutoShardedBot):
-    def __init__(self, database_url, default_prefix):
+    def __init__(self, database_url, default_prefix, ssl_required=False):
         # env variables
+        self.ssl_required = ssl_required
         self.default_prefix = default_prefix
         self.database_url = database_url
 
@@ -51,7 +52,10 @@ class BotClass(commands.AutoShardedBot):
         super(BotClass, self).run(*args, **kwargs)
 
     async def connection_of_postgres(self):
-        self.pg_conn = await asyncpg.create_pool(self.database_url, ssl='require')
+        if self.ssl_required:
+            self.pg_conn = await asyncpg.create_pool(self.database_url, ssl='require')
+        else:
+            self.pg_conn = await asyncpg.create_pool(self.database_url)
 
     async def on_ready(self):
         await self.change_presence(activity=discord.Activity(name="earlbot.xyz", type=discord.ActivityType.listening), status=discord.Status.dnd)

@@ -10,6 +10,17 @@ class Information(commands.Cog):
         self.bot = bot
         self.bot.help_command.cog = self
 
+    async def cog_check(self, ctx):
+        if ctx.channel.type == discord.ChannelType.private:
+            return True
+        enabled = await self.bot.pg_conn.fetchval("""
+                SELECT enabled FROM cogs_data
+                WHERE guild_id = $1
+                """, ctx.guild.id)
+        if f"Bot.cogs.{self.qualified_name}" in enabled:
+            return True
+        return False
+
     @commands.command()
     async def ping(self, ctx):
         time_before = datetime.datetime.utcnow()
