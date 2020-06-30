@@ -9,8 +9,9 @@ from .utils.time_bot import format_duration
 
 
 class BotClass(commands.AutoShardedBot):
-    def __init__(self, database_url, default_prefix):
+    def __init__(self, database_url, default_prefix, ssl_required=False):
         # env variables
+        self.ssl_required = ssl_required
         self.default_prefix = default_prefix
         self.database_url = database_url
 
@@ -20,6 +21,7 @@ class BotClass(commands.AutoShardedBot):
         # creating instance variables
         self.pg_conn = None
         self.start_number = 1000000000000000
+        self.init_cogs = [f'Bot.cogs.{filename[:-3]}' for filename in os.listdir('Bot/cogs') if filename.endswith('.py')]
 
         # loading cogs
         for file in os.listdir('Bot/cogs'):
@@ -31,6 +33,7 @@ class BotClass(commands.AutoShardedBot):
 
         # start the tasks
         self.update_count_data_according_to_guild.start()
+        self.add_guild_to_db.start()
 
     async def get_prefix(self, message):
         if message.channel.type == discord.ChannelType.private:
@@ -51,7 +54,10 @@ class BotClass(commands.AutoShardedBot):
         super(BotClass, self).run(*args, **kwargs)
 
     async def connection_of_postgres(self):
-        self.pg_conn = await asyncpg.create_pool(self.database_url, ssl='require')
+        if self.ssl_required:
+            self.pg_conn = await asyncpg.create_pool(self.database_url, ssl='require')
+        else:
+            self.pg_conn = await asyncpg.create_pool(self.database_url)
 
     async def on_ready(self):
         await self.change_presence(activity=discord.Activity(name="earlbot.xyz", type=discord.ActivityType.listening), status=discord.Status.dnd)
@@ -138,4 +144,18 @@ class BotClass(commands.AutoShardedBot):
                 INSERT INTO id_data
                 VALUES ($1, $1, $1, $1, $1, $1, 1)
                 """, self.start_number)
+
+    @tasks.loop(seconds=10)
+    async def add_guild_to_db(self):
+        await self.wait_until_ready()
+        for guild in self.guilds:
+            guild_data = await self.pg_conn.fetchrow("""
+            SELECT * FROM cogs_data
+            WHERE guild_id = $1
+            """, guild.id)
+            if not guild_data:
+                await self.pg_conn.execute("""
+                INSERT INTO cogs_data (guild_id, enabled, disabled)
+                VALUES ($1, $2, $3)
+                """, guild.id, self.init_cogs, ["None"])
 

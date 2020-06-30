@@ -12,6 +12,17 @@ class Reaction_Roles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    async def cog_check(self, ctx):
+        if ctx.channel.type == discord.ChannelType.private:
+            return True
+        enabled = await self.bot.pg_conn.fetchval("""
+                SELECT enabled FROM cogs_data
+                WHERE guild_id = $1
+                """, ctx.guild.id)
+        if f"Bot.cogs.{self.qualified_name}" in enabled:
+            return True
+        return False
+
     async def normal_reaction_role(self, payload):
         guild: discord.Guild = self.bot.get_guild(payload.guild_id)
         user: discord.Member = guild.get_member(payload.user_id)
@@ -130,55 +141,65 @@ class Reaction_Roles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        guild: discord.Guild = self.bot.get_guild(payload.guild_id)
-        channel: discord.TextChannel = guild.get_channel(payload.channel_id)
-        message: discord.Message = await channel.fetch_message(payload.message_id)
-        reactions = [str(reaction.emoji) for reaction in message.reactions if reaction.me]
-        if str(payload.emoji) in reactions:
-            message_type = await self.bot.pg_conn.fetchval("""
-            SELECT message_type FROM reaction_roles_message_data
-            WHERE message_id = $1
-            """, payload.message_id)
-            limit = await self.bot.pg_conn.fetchval("""
-            SELECT "limit" FROM reaction_roles_message_data
-            WHERE message_id = $1
-            """, payload.message_id)
-            if message_type == "Normal":
-                await self.normal_reaction_role(payload)
-            elif message_type == "Unique":
-                await self.unique_reaction_role(payload)
-            elif message_type == "Drop":
-                await self.drop_reaction_role(payload)
-            elif message_type == "Verify":
-                await self.verify_reaction_role(payload)
-            elif message_type == "Limit" and limit != -1:
-                await self.limit_reaction_role(payload)
+        enabled = await self.bot.pg_conn.fetchval("""
+                    SELECT enabled FROM cogs_data
+                    WHERE guild_id = $1
+                    """, payload.guild_id)
+        if f"Bot.cogs.{self.qualified_name}" in enabled:
+            guild: discord.Guild = self.bot.get_guild(payload.guild_id)
+            channel: discord.TextChannel = guild.get_channel(payload.channel_id)
+            message: discord.Message = await channel.fetch_message(payload.message_id)
+            reactions = [str(reaction.emoji) for reaction in message.reactions if reaction.me]
+            if str(payload.emoji) in reactions:
+                message_type = await self.bot.pg_conn.fetchval("""
+                SELECT message_type FROM reaction_roles_message_data
+                WHERE message_id = $1
+                """, payload.message_id)
+                limit = await self.bot.pg_conn.fetchval("""
+                SELECT "limit" FROM reaction_roles_message_data
+                WHERE message_id = $1
+                """, payload.message_id)
+                if message_type == "Normal":
+                    await self.normal_reaction_role(payload)
+                elif message_type == "Unique":
+                    await self.unique_reaction_role(payload)
+                elif message_type == "Drop":
+                    await self.drop_reaction_role(payload)
+                elif message_type == "Verify":
+                    await self.verify_reaction_role(payload)
+                elif message_type == "Limit" and limit != -1:
+                    await self.limit_reaction_role(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        guild: discord.Guild = self.bot.get_guild(payload.guild_id)
-        channel: discord.TextChannel = guild.get_channel(payload.channel_id)
-        message: discord.Message = await channel.fetch_message(payload.message_id)
-        reactions = [str(reaction.emoji) for reaction in message.reactions if reaction.me]
-        if str(payload.emoji) in reactions:
-            message_type = await self.bot.pg_conn.fetchval("""
-                    SELECT message_type FROM reaction_roles_message_data
-                    WHERE message_id = $1
-                    """, payload.message_id)
-            limit = await self.bot.pg_conn.fetchval("""
-                    SELECT "limit" FROM reaction_roles_message_data
-                    WHERE message_id = $1
-                    """, payload.message_id)
-            if message_type == "Normal":
-                await self.normal_reaction_role(payload)
-            elif message_type == "Unique":
-                await self.unique_reaction_role(payload)
-            elif message_type == "Drop":
-                await self.drop_reaction_role(payload)
-            elif message_type == "Verify":
-                await self.verify_reaction_role(payload)
-            elif message_type == "Limit" and limit != -1:
-                await self.limit_reaction_role(payload)
+        enabled = await self.bot.pg_conn.fetchval("""
+                    SELECT enabled FROM cogs_data
+                    WHERE guild_id = $1
+                    """, payload.guild_id)
+        if f"Bot.cogs.{self.qualified_name}" in enabled:
+            guild: discord.Guild = self.bot.get_guild(payload.guild_id)
+            channel: discord.TextChannel = guild.get_channel(payload.channel_id)
+            message: discord.Message = await channel.fetch_message(payload.message_id)
+            reactions = [str(reaction.emoji) for reaction in message.reactions if reaction.me]
+            if str(payload.emoji) in reactions:
+                message_type = await self.bot.pg_conn.fetchval("""
+                        SELECT message_type FROM reaction_roles_message_data
+                        WHERE message_id = $1
+                        """, payload.message_id)
+                limit = await self.bot.pg_conn.fetchval("""
+                        SELECT "limit" FROM reaction_roles_message_data
+                        WHERE message_id = $1
+                        """, payload.message_id)
+                if message_type == "Normal":
+                    await self.normal_reaction_role(payload)
+                elif message_type == "Unique":
+                    await self.unique_reaction_role(payload)
+                elif message_type == "Drop":
+                    await self.drop_reaction_role(payload)
+                elif message_type == "Verify":
+                    await self.verify_reaction_role(payload)
+                elif message_type == "Limit" and limit != -1:
+                    await self.limit_reaction_role(payload)
 
     @commands.group(name='reaction_roles', aliases=['rr', 'react_role'], help="Does nothing when invoked without subcommand!", invoke_without_command=True)
     async def rr(self, ctx, message_id: int):

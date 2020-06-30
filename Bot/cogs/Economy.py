@@ -25,6 +25,7 @@ class Economy(commands.Cog):
     
     
     @commands.Cog.listener()
+<<<<<<< HEAD
     async def on_member_join(self,member):
         member_id = member.id
         check = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = ?", (m,))
@@ -32,6 +33,14 @@ class Economy(commands.Cog):
         if not check:
             await self.bot.pg_conn.execute("INSERT INTO users_data (coins,xp,level,user_id,passive,bank,bread,messages) VALUES (0,0,0,$1,'off',0,0,0)",member_id)
    
+=======
+    async def on_member_join(self, member):
+        check = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = $1", member.id)
+
+        if not check:
+            await self.bot.pg_conn.execute("INSERT INTO users_data (coins,xp,level,user_id,passive,bank,bread,messages) VALUES (0,0,0,$1,'off',0,0,0)", member.id)
+
+>>>>>>> 590216024b474735ac327767a4d792270aeb5336
     @commands.command()
     async def bal(self,ctx):
         member_id = ctx.author.id
@@ -222,10 +231,15 @@ class Economy(commands.Cog):
     
   
 
+<<<<<<< HEAD
     
     
     @commands.command()
     async def level(self,ctx):
+=======
+    @commands.command(name="eco_level")
+    async def eco_level(self, ctx):
+>>>>>>> 590216024b474735ac327767a4d792270aeb5336
         user = ctx.author.id
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
         level = user_info["level"]
@@ -497,9 +511,15 @@ class Economy(commands.Cog):
         embed.add_field(name=f"!shop",
                         value=f"Buy amazing stuff!", inline=True)
         await ctx.send(embed=embed)
+<<<<<<< HEAD
     
     @commands.command()
     async def leaderboard(self,ctx):
+=======
+
+    @commands.command(name="eco_leaderboard")
+    async def eco_leaderboard(self, ctx):
+>>>>>>> 590216024b474735ac327767a4d792270aeb5336
         members = ctx.guild.members
         i_d = [member.id for member in members]
         lb = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = ANY($1::BIGINT[]) ORDER BY coins DESC LIMIT 5 ",i_d)

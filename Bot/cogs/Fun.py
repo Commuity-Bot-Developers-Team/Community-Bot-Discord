@@ -92,6 +92,17 @@ class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def cog_check(self, ctx):
+        if ctx.channel.type == discord.ChannelType.private:
+            return True
+        enabled = await self.bot.pg_conn.fetchval("""
+                SELECT enabled FROM cogs_data
+                WHERE guild_id = $1
+                """, ctx.guild.id)
+        if f"Bot.cogs.{self.qualified_name}" in enabled:
+            return True
+        return False
+
     @commands.command(help="Starts a game of Tic Tac Toe that you can play with a friend")
     async def ttt(self, ctx, member: discord.Member):
         if ctx.author == member:
@@ -359,6 +370,19 @@ class Fun(commands.Cog):
                         await ctx.send(embed=embed)
                     else:
                         await ctx.send(f"Error code {request.status} and {image_request.status}: Error")
+
+    @commands.command(name='99!', help='Gives a random brooklyn 99 quote!')
+    async def _99(self, ctx: discord.ext.commands.context.Context):
+        brooklyn_99_quotes = [
+            'I\'m the human form of the 💯 emoji.',
+            'Bingpot!',
+            (
+                'Cool. Cool cool cool cool cool cool cool, '
+                'no doubt no doubt no doubt no doubt.'
+            )
+        ]
+        response = random.choice(brooklyn_99_quotes)
+        await ctx.send(response)
 
 
 def setup(bot):
