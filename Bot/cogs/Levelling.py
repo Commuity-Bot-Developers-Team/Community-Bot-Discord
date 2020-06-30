@@ -31,6 +31,7 @@ class Levelling(commands.Cog):
             return True
         return False
 
+    # role config helper functions
     async def get_base_role(self, guild, name):
         base_role_id = await self.bot.pg_conn.fetchval("""
         SELECT base_role_id FROM leveling_role_configuration_data
@@ -68,7 +69,6 @@ class Levelling(commands.Cog):
         WHERE guild_id = $1
         """, guild.id)
         top_role_ids = [top_role[0][-1] for top_role in top_roles_list]
-        # print(await convert_to(top_role_ids, Converters.role_converter, guild))
         return await convert_to(top_role_ids, Converters.role_converter, guild)
 
     async def get_all_leveling_roles_set_for(self, guild):
@@ -91,190 +91,50 @@ class Levelling(commands.Cog):
         WHERE guild_id = $1
         """, guild.id)
         names_list_1 = [name[0] for name in names_list]
-        print(names_list_1)
         return names_list_1
 
-    @commands.group(aliases=['lrs'], invoke_without_command=True)
-    async def leveling_roles_sets(self, ctx):
-        leveling_roles_set_list_row = await self.bot.pg_conn.fetch("""
-            SELECT name FROM leveling_role_configuration_data
-            WHERE guild_id = $1
-        """, ctx.guild.id)
-        leveling_roles_set_list = [name[0] for name in leveling_roles_set_list_row]
-        embed = discord.Embed()
-        embed.title = "Available leveling roles sets in this server!"
-        msg = ""
-        for role_index, leveling_roles_set in enumerate(leveling_roles_set_list, start=1):
-            msg += f"{role_index}. {leveling_roles_set}"
-        embed.description = msg
-        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
+    # blacklist helper functions
+    async def get_blacklist_roles_for(self, guild):
+        blacklist_roles_ids = await self.bot.pg_conn.fetchval("""
+        SELECT blacklist_roles FROM leveling_blacklist_data
+        WHERE guild_id = $1 AND "blacklist?" = TRUE
+        """, guild.id)
+        if blacklist_roles_ids:
+            return await convert_to(blacklist_roles_ids, Converters.role_converter, guild)
+        else:
+            return []
 
-    @leveling_roles_sets.command(name='add', aliases=['+'])
-    async def leveling_roles_sets_add(self, ctx, name: str):
-        leveling_id = await self.bot.pg_conn.fetchval("""
-        SELECT leveling_role_id FROM id_data
-        WHERE row_id = $1
-        """, 1)
-        leveling_roles_set = await self.bot.pg_conn.fetchval("""
-        SELECT * FROM leveling_role_configuration_data
-        WHERE guild_id = $1 AND name = $2
-        """, ctx.guild.id, name)
-        if leveling_roles_set:
-            return await ctx.send("Leveling roles set is already available with this name, try again with a different name.")
-        await ctx.send("I have created a new leveling role set. You can now enter the amount of leveling roles.")
-        await ctx.send("Now tell me how many leveling roles you want to add?")
-        try:
-            count = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author and m.content.isnumeric(), timeout=180)
-        except asyncio.TimeoutError:
-            return await ctx.send("You took too long to respond. Try creating the leveling role set with the same name.")
-        await ctx.send("Thank you for sending the number, now send the first leveling role in this format {level} -> {role}")
-        levels_list = []
-        roles_list = []
-        for i in range(int(count.content)):
-            try:
-                leveling_role = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=180)
-            except asyncio.TimeoutError:
-                return await ctx.send("You took too long to respond. Try creating the leveling role set with the same name.")
-            if leveling_role.content == "cancel":
-                return await ctx.send(f"I'll cancel this operation. You can try the same thing again using `{ctx.prefix}lrs + \"{name}\"`")
-            level, role = leveling_role.content.split(' -> ')
-            level = int(level.strip())
-            role = await commands.RoleConverter().convert(ctx, role)
-            await ctx.send(f"I have added the {level} -> {role.mention}")
-            if i == (int(count.content) - 1):
-                await ctx.send("You have send all the leveling roles.")
-            else:
-                await ctx.send(f"Send the next one.")
-            levels_list.append(level)
-            roles_list.append(role.id)
+    async def get_whitelist_roles_for(self, guild):
+        whitelist_roles_ids = await self.bot.pg_conn.fetchval("""
+        SELECT whitelist_roles FROM leveling_blacklist_data
+        WHERE guild_id = $1 AND "whitelist?" = TRUE
+        """, guild.id)
+        if whitelist_roles_ids:
+            return await convert_to(whitelist_roles_ids, Converters.role_converter, guild)
+        else:
+            return []
 
-        await ctx.send("Give the base role.")
-        try:
-            base_role = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=180)
-        except asyncio.TimeoutError:
-            return await ctx.send("You took too long to respond. Try creating the leveling role set with the same name.")
-        base_role = await commands.RoleConverter().convert(ctx, base_role.content)
-        await ctx.send(f"Thank you for sending the base role. {base_role.mention}")
-        await ctx.send(f"I'll add your levelling role set with this ID {leveling_id}, you can use ID or Name.")
+    async def get_whitelist_channels_for(self, guild):
+        whitelist_channel_ids = await self.bot.pg_conn.fetchval("""
+        SELECT whitelist_roles FROM leveling_blacklist_data
+        WHERE guild_id = $1 AND "whitelist?" = TRUE
+        """, guild.id)
+        if whitelist_channel_ids:
+            return await convert_to(whitelist_channel_ids, Converters.channel_converter, guild)
+        else:
+            return []
 
-        await self.bot.pg_conn.execute("""
-        INSERT INTO leveling_role_configuration_data
-        VALUES ($1, $2, $3, $4, $5, $6)
-        """, leveling_id, ctx.guild.id, name, roles_list, base_role.id, levels_list)
-        await ctx.send(f"I have added your levelling role set! This is the name: {name} and ID {leveling_id}")
-        await self.bot.pg_conn.execute("""
-        UPDATE id_data
-        SET leveling_role_id = leveling_role_id + 1
-        WHERE row_id = 1
-        """)
+    async def get_blacklist_channels_for(self, guild):
+        blacklist_channel_ids = await self.bot.pg_conn.fetchval("""
+        SELECT whitelist_roles FROM leveling_blacklist_data
+        WHERE guild_id = $1 AND "whitelist?" = TRUE
+        """, guild.id)
+        if blacklist_channel_ids:
+            return await convert_to(blacklist_channel_ids, Converters.channel_converter, guild)
+        else:
+            return []
 
-    @leveling_roles_sets.command(name='remove', aliases=['-'])
-    async def leveling_roles_sets_remove(self, ctx, name: Optional[str]):
-        row = await self.bot.pg_conn.fetchrow("""
-            DELETE FROM leveling_role_configuration_data
-            WHERE name = $1
-            RETURNING level_roles_id, name
-        """, name)
-        await ctx.send(f"Deleted the leveling roles set with name: {row['name']} or ID: {row['level_roles_id']}")
-
-    @leveling_roles_sets.group(name="leveling_roles_list", aliases=['lrl'], invoke_without_command=True)
-    async def leveling_roles_sets_leveling_roles_list(self, ctx, name: str):
-        row = await self.bot.pg_conn.fetchrow("""
-        SELECT levels, leveling_roles_ids, base_role_id FROM leveling_role_configuration_data
-        WHERE name = $1 AND guild_id = $2
-        """, name, ctx.guild.id)
-        if not row:
-            return await ctx.send("I can't find the leveling role set with the name given!")
-        embed = discord.Embed()
-        embed.title = f"Available roles in {name}"
-        msg = ""
-        for level, (role_index, role) in zip(row['levels'], enumerate(row['leveling_roles_ids'], start=1)):
-            role_mention = await commands.RoleConverter().convert(ctx, str(role))
-            msg += f"{role_index}. {level=} -> {role_mention.mention}\n"
-        base_role = await commands.RoleConverter().convert(ctx, str(row['base_role_id']))
-        msg += f"Base role {base_role.mention}"
-        embed.description = msg
-        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
-
-    @leveling_roles_sets_leveling_roles_list.command(name="add", aliases=['+'], invoke_without_command=True)
-    async def leveling_roles_sets_leveling_roles_list_add(self, ctx, name: str, level: int, role: discord.Role):
-        row = await self.bot.pg_conn.fetchrow("""
-        SELECT levels, leveling_roles_ids FROM leveling_role_configuration_data
-        WHERE guild_id = $1 AND name = $2
-        """, ctx.guild.id, name)
-        if not row:
-            return await ctx.send("I can't find the leveling role set with the name given!")
-        list_of_leveling_role_ids, role_, index = insert_or_append(row['leveling_roles_ids'], role.id)
-        list_of_levels, level, index_1 = insert_or_append(row['levels'], level)
-        await self.bot.pg_conn.execute("""
-        UPDATE leveling_role_configuration_data
-        SET levels = $1,
-            leveling_roles_ids = $2
-        WHERE guild_id = $4 AND name = $3
-        """, list_of_levels, list_of_leveling_role_ids, name, ctx.guild.id)
-        await ctx.send(f"I've added the leveling role to the given set. {level} -> {role.mention}")
-
-    @leveling_roles_sets_leveling_roles_list.command(name="remove", aliases=['-'], invoke_without_command=True)
-    async def leveling_roles_sets_leveling_roles_list_remove(self, ctx, name: str, level: int, role: discord.Role):
-        row = await self.bot.pg_conn.fetchrow("""
-        SELECT levels, leveling_roles_ids FROM leveling_role_configuration_data
-        WHERE guild_id = $1 AND name = $2
-        """, ctx.guild.id, name)
-        if not row:
-            return await ctx.send("I can't find the leveling role set with the name given!")
-        list_of_leveling_role_ids, role_, index = pop_or_remove(row['leveling_roles_ids'], role.id)
-        list_of_levels, level, index_1 = pop_or_remove(row['levels'], level)
-        await self.bot.pg_conn.execute("""
-        UPDATE leveling_role_configuration_data
-        SET levels = $1,
-            leveling_roles_ids = $2
-        WHERE guild_id = $4 AND name = $3
-        """, list_of_levels, list_of_leveling_role_ids, name, ctx.guild.id)
-        await ctx.send(f"I've removed the leveling role to the given set. {level} -> {role.mention}")
-
-    @leveling_roles_sets_leveling_roles_list.command(name="update_baserole", aliases=['ubr'])
-    async def leveling_roles_sets_leveling_roles_list_update_baserole(self, ctx, name: str, new_baserole: discord.Role):
-        base_role_id = await self.bot.pg_conn.fetchval("""
-        SELECT base_role_id FROM leveling_role_configuration_data
-        WHERE guild_id = $1 AND name = $2
-        """, ctx.guild.id, name)
-        if not base_role_id:
-            return await ctx.send("I can't find the leveling role set with the name given!")
-        await self.bot.pg_conn.execute("""
-        UPDATE leveling_role_configuration_data
-        SET base_role_id = $2
-        WHERE guild_id = $1 AND name = $3
-        """, ctx.guild.id, new_baserole.id, name)
-        await ctx.send(f"Updated base role for leveling role set {name}")
-
-    @leveling_roles_sets_leveling_roles_list.command(name="update_name", aliases=['u_n'])
-    async def leveling_roles_sets_leveling_roles_list_update_name(self, ctx, name: str, new_name: str):
-        old_name = await self.bot.pg_conn.fetchval("""
-                SELECT name FROM leveling_role_configuration_data
-                WHERE guild_id = $1 AND name = $2
-                """, ctx.guild.id, name)
-        if not old_name:
-            return await ctx.send("I can't find the leveling role set with the name given!")
-        await self.bot.pg_conn.execute("""
-                UPDATE leveling_role_configuration_data
-                SET name = $2
-                WHERE guild_id = $1 AND name = $3
-                """, ctx.guild.id, new_name, name)
-        await ctx.send(f"Updated name for leveling role set {name}")
-
-    async def update_data(self, member):
-        user_data = await self.bot.pg_conn.fetchrow("""
-        SELECT * FROM leveling_data
-        WHERE guild_id = $1 AND user_id = $2
-        """, member.guild.id, member.id)
-        if not user_data:
-            await self.bot.pg_conn.execute("""
-            INSERT INTO leveling_data (guild_id, user_id, level, xps, last_message_time) 
-            VALUES ($1, $2, 0, 0, 0)
-            """, member.guild.id, member.id)
-
+    # level up message helper funcs
     async def get_destination_for_level_up_messages(self, message: discord.Message) -> Optional[discord.TextChannel]:
         destination_channel_id = await self.bot.pg_conn.fetchval("""
         SELECT channel_id FROM leveling_message_destination_data
@@ -294,17 +154,26 @@ class Levelling(commands.Cog):
         else:
             return None
 
+    async def get_last_message_time(self, member: discord.Member):
+        last_message_time = await self.bot.pg_conn.fetchval("""
+        SELECT last_message_time FROM leveling_data
+        WHERE guild_id = $1 AND user_id = $2
+        """, member.guild.id, member.id)
+        return last_message_time if last_message_time else 0
+
     async def get_level(self, member: discord.Member):
-        return await self.bot.pg_conn.fetchval("""
+        level = await self.bot.pg_conn.fetchval("""
         SELECT level FROM leveling_data
         WHERE guild_id = $1 AND user_id = $2
         """, member.guild.id, member.id)
+        return level if level else 0
 
     async def get_xps(self, member: discord.Member):
-        return await self.bot.pg_conn.fetchval("""
+        xps = await self.bot.pg_conn.fetchval("""
         SELECT xps FROM leveling_data
         WHERE guild_id = $1 AND user_id = $2
         """, member.guild.id, member.id)
+        return xps if xps else 0
 
     async def set_level(self, member: discord.Member, level: int):
         await self.bot.pg_conn.execute("""
@@ -320,29 +189,30 @@ class Levelling(commands.Cog):
                 WHERE guild_id = $1 AND user_id = $2
                 """, member.guild.id, member.id, xps)
 
-    async def get_last_message_time(self, member: discord.Member):
-        last_message_time = await self.bot.pg_conn.fetchval("""
-        SELECT last_message_time FROM leveling_data
-        WHERE guild_id = $1 AND user_id = $2
-        """, member.guild.id, member.id)
-        return last_message_time if last_message_time else 0
-
     async def update_level(self, member: discord.Member):
         old_user_level = await self.get_level(member)
         user_xps = await self.get_xps(member)
         new_user_level = round(math.floor(user_xps ** 0.2))
-
-        # if user_xps < self.xps_level[1]:
-        #     new_user_level = 0
-        # elif self.xps_level[1] <= user_xps < self.xps_level[-1]:
-        #     for i in range(1, len(self.xps_level) - 1):
-        #         if self.xps_level[i] <= user_xps < self.xps_level[i + 1]:
-        #             new_user_level = i
-        #             break
-        # else:
-        #     new_user_level = len(self.xps_level) - 1
-
         return old_user_level, new_user_level
+
+    async def update_xps(self, member: discord.Member):
+        await self.bot.pg_conn.execute("""
+               UPDATE leveling_data
+               SET xps = $3,
+               last_message_time = $4
+               WHERE guild_id = $1 AND user_id = $2
+           """, member.guild.id, member.id, int(int(await self.get_xps(member)) + random.randint(1, 5)), time.time())
+
+    async def update_data(self, member):
+        user_data = await self.bot.pg_conn.fetchrow("""
+        SELECT * FROM leveling_data
+        WHERE guild_id = $1 AND user_id = $2
+        """, member.guild.id, member.id)
+        if not user_data:
+            await self.bot.pg_conn.execute("""
+            INSERT INTO leveling_data (guild_id, user_id, level, xps, last_message_time) 
+            VALUES ($1, $2, 0, 0, 0)
+            """, member.guild.id, member.id)
 
     async def send_level_up_message(self, member: discord.Member, message: discord.Message, old_level, new_level):
         await self.bot.pg_conn.execute("""
@@ -366,14 +236,6 @@ class Levelling(commands.Cog):
                 await level_up_message_destination.send(level_up_message)
             else:
                 await message.channel.send(level_up_message)
-
-    async def update_xps(self, member: discord.Member):
-        await self.bot.pg_conn.execute("""
-            UPDATE leveling_data
-            SET xps = $3,
-            last_message_time = $4
-            WHERE guild_id = $1 AND user_id = $2
-        """, member.guild.id, member.id, int(int(await self.get_xps(member)) + random.randint(1, 5)), time.time())
 
     async def return_user_category(self, member: discord.Member):
         user_category = None
@@ -412,6 +274,48 @@ class Levelling(commands.Cog):
         except IndexError:
             pass
 
+    async def check_blacklist_role(self, member: discord.Member):
+        black_listed_roles = await self.get_blacklist_roles_for(member.guild)
+        for black_listed_role in black_listed_roles:
+            if black_listed_role in member.roles:
+                return True
+        return False
+
+    async def check_blacklist_channel(self, message: discord.Message):
+        black_listed_channels = await self.get_blacklist_channels_for(message.guild)
+        for black_listed_channel in black_listed_channels:
+            if black_listed_channel == message.channel:
+                return True
+        return False
+
+    async def check_whitelist_role(self, member: discord.Member):
+        white_listed_roles = await self.get_whitelist_roles_for(member.guild)
+        for white_listed_role in white_listed_roles:
+            if white_listed_role in member.roles:
+                return True
+        return False
+
+    async def check_whitelist_channel(self, message: discord.Message):
+        white_listed_channels = await self.get_whitelist_channels_for(message.guild)
+        for white_listed_channel in white_listed_channels:
+            if white_listed_channel == message.channel:
+                return True
+        return False
+
+    async def check_blacklist_channel_or_role(self, message: discord.Message):
+        blacklist_role_check = await self.check_blacklist_role(message.author)
+        blacklist_channel_check = await self.check_blacklist_channel(message)
+        if blacklist_channel_check or blacklist_role_check:
+            return True
+        return False
+
+    async def check_whitelist_channel_or_role(self, message: discord.Message):
+        whitelist_role_check = await self.check_whitelist_role(message.author)
+        whitelist_channel_check = await self.check_whitelist_channel(message)
+        if whitelist_channel_check or whitelist_role_check:
+            return True
+        return False
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author == self.bot.user:
@@ -421,9 +325,9 @@ class Levelling(commands.Cog):
                 WHERE guild_id = $1
                 """, message.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
-            if (int(time.time()) - await self.get_last_message_time(message.author)) > 1 and not str(message.content).startswith(tuple(await self.bot.get_prefix(message))):
-                if message.channel.type != discord.ChannelType.private:
-                    if not isinstance(message.author, discord.User):
+            if not isinstance(message.author, discord.User):
+                if message.channel.type != discord.ChannelType.private and (await self.check_whitelist_channel_or_role(message) or not await self.check_blacklist_channel_or_role(message)):
+                    if (int(time.time()) - await self.get_last_message_time(message.author)) > 1 and not str(message.content).startswith(tuple(await self.bot.get_prefix(message))):
                         await self.update_data(message.author)
                         if discord.utils.find(lambda r: r.name == 'Respected People', message.guild.roles) not in message.author.roles and message.author.bot is False:
                             user_category_1 = await self.return_user_category(message.author)
@@ -431,6 +335,67 @@ class Levelling(commands.Cog):
                             old_level, new_level = await self.update_level(message.author)
                             await self.give_roles_according_to_level(user_category_1, message.author, old_level, new_level)
                             await self.send_level_up_message(message.author, message, old_level, new_level)
+
+    async def check_new_role(self, before, after):
+        base_roles = await self.get_base_roles_for(after.guild)
+        new_role = next(role for role in after.roles if role not in before.roles)
+        if after.bot is True and new_role.name in self.get_all_leveling_roles_set_for(after.guild):
+            await after.remove_roles(new_role)
+        elif new_role.name in base_roles:
+            # set user xps to 0
+            await self.set_level(after, 0)
+            await self.set_xps(after, 0)
+            leveling_names = await self.get_all_names_of_leveling_roles(after.guild)
+            role_category_1 = leveling_names[base_roles.index(new_role)]
+            await after.add_roles(await self.get_top_role(after.guild, role_category_1))
+            for base_role in base_roles:
+                if base_role in after.roles and new_role != base_role:
+                    await after.remove_roles(base_role)
+
+        return new_role
+
+    async def check_blacklist_status(self, new_role, after):
+        # top_roles = await self.get_top_roles_for(after.guild)
+        # if new_role.name in top_roles:
+        #     respected_people_status = True
+        #     for i in self.leveling_roles:
+        #         if  not in after.roles:
+        #             respected_people_status = False
+        #     if respected_people_status is True:
+        #         # you can set member out of leveling system but it checks with role name "respected people"
+        #         if discord.utils.get(after.guild.roles, name='Respected People'):
+        #             await after.add_roles(discord.utils.find(lambda r: r.name == 'Respected People', after.guild.roles))
+        #             await self.set_level(after, 0)
+        #             await self.set_xps(after, 0)
+        #         for i in self.leveling_roles:
+        #             for j in self.leveling_prefix:
+        #                 if discord.utils.get(after.guild.roles, name=j + self.leveling_roles[i][0]) in after.roles:
+        #                     await after.remove_roles(discord.utils.find(lambda r: r.name == j + self.leveling_roles[i][0], after.guild.roles))
+        pass
+
+    async def check_for_removed_role(self, before, after):
+        base_roles = await self.get_base_roles_for(after.guild)
+        removed_role = next(role for role in before.roles if role not in after.roles)
+        if removed_role.name in base_roles:
+            leveling_names = await self.get_all_names_of_leveling_roles(after.guild)
+            role_category = leveling_names[base_roles.index(removed_role.name)]
+            for role in await self.get_leveling_role_set(after.guild, role_category):
+                if role and role in after.roles:
+                    await after.remove_roles(role)
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        enabled = await self.bot.pg_conn.fetchval("""
+                        SELECT enabled FROM cogs_data
+                        WHERE guild_id = $1
+                        """, after.guild.id)
+        if f"Bot.cogs.{self.qualified_name}" in enabled:
+
+                if len(before.roles) < len(after.roles):
+                    new_role_1 = await self.check_new_role(before, after)
+                    await self.check_blacklist_status(new_role_1, after)
+                elif len(before.roles) > len(after.roles):
+                    await self.check_for_removed_role(before, after)
 
     @commands.group(name="xps", help="Returns your xps!", invoke_without_command=True, aliases=['xp', 'experience'])
     async def xps(self, ctx: commands.Context):
@@ -665,66 +630,391 @@ class Levelling(commands.Cog):
                 """, ctx.guild.id, messages)
         await ctx.send(f"Set message {message} to {index}")
 
-    async def check_new_role(self, before, after):
-        base_roles = await self.get_base_roles_for(after.guild)
-        new_role = next(role for role in after.roles if role not in before.roles)
-        if after.bot is True and new_role.name in self.get_all_leveling_roles_set_for(after.guild):
-            await after.remove_roles(new_role)
-        elif new_role.name in base_roles:
-            # set user xps to 0
-            await self.set_level(after, 0)
-            await self.set_xps(after, 0)
-            leveling_names = await self.get_all_names_of_leveling_roles(after.guild)
-            role_category_1 = leveling_names[base_roles.index(new_role)]
-            await after.add_roles(await self.get_top_role(after.guild, role_category_1))
-            for base_role in base_roles:
-                if base_role in after.roles and new_role != base_role:
-                    await after.remove_roles(base_role)
+    @commands.group(aliases=['lrs'], invoke_without_command=True)
+    async def leveling_roles_sets(self, ctx):
+        leveling_roles_set_list_row = await self.bot.pg_conn.fetch("""
+                SELECT name FROM leveling_role_configuration_data
+                WHERE guild_id = $1
+            """, ctx.guild.id)
+        leveling_roles_set_list = [name[0] for name in leveling_roles_set_list_row]
+        embed = discord.Embed()
+        embed.title = "Available leveling roles sets in this server!"
+        msg = ""
+        for role_index, leveling_roles_set in enumerate(leveling_roles_set_list, start=1):
+            msg += f"{role_index}. {leveling_roles_set}"
+        embed.description = msg
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
 
-        return new_role
+    @leveling_roles_sets.command(name='add', aliases=['+'])
+    async def leveling_roles_sets_add(self, ctx, name: str):
+        leveling_id = await self.bot.pg_conn.fetchval("""
+            SELECT leveling_role_id FROM id_data
+            WHERE row_id = $1
+            """, 1)
+        leveling_roles_set = await self.bot.pg_conn.fetchval("""
+            SELECT * FROM leveling_role_configuration_data
+            WHERE guild_id = $1 AND name = $2
+            """, ctx.guild.id, name)
+        if leveling_roles_set:
+            return await ctx.send("Leveling roles set is already available with this name, try again with a different name.")
+        await ctx.send("I have created a new leveling role set. You can now enter the amount of leveling roles.")
+        await ctx.send("Now tell me how many leveling roles you want to add?")
+        try:
+            count = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author and m.content.isnumeric(), timeout=180)
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long to respond. Try creating the leveling role set with the same name.")
+        await ctx.send("Thank you for sending the number, now send the first leveling role in this format {level} -> {role}")
+        levels_list = []
+        roles_list = []
+        for i in range(int(count.content)):
+            try:
+                leveling_role = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=180)
+            except asyncio.TimeoutError:
+                return await ctx.send("You took too long to respond. Try creating the leveling role set with the same name.")
+            if leveling_role.content == "cancel":
+                return await ctx.send(f"I'll cancel this operation. You can try the same thing again using `{ctx.prefix}lrs + \"{name}\"`")
+            level, role = leveling_role.content.split(' -> ')
+            level = int(level.strip())
+            role = await commands.RoleConverter().convert(ctx, role)
+            await ctx.send(f"I have added the {level} -> {role.mention}")
+            if i == (int(count.content) - 1):
+                await ctx.send("You have send all the leveling roles.")
+            else:
+                await ctx.send(f"Send the next one.")
+            levels_list.append(level)
+            roles_list.append(role.id)
 
-    async def check_blacklist_status(self, new_role, after):
-        # top_roles = await self.get_top_roles_for(after.guild)
-        # if new_role.name in top_roles:
-        #     respected_people_status = True
-        #     for i in self.leveling_roles:
-        #         if  not in after.roles:
-        #             respected_people_status = False
-        #     if respected_people_status is True:
-        #         # you can set member out of leveling system but it checks with role name "respected people"
-        #         if discord.utils.get(after.guild.roles, name='Respected People'):
-        #             await after.add_roles(discord.utils.find(lambda r: r.name == 'Respected People', after.guild.roles))
-        #             await self.set_level(after, 0)
-        #             await self.set_xps(after, 0)
-        #         for i in self.leveling_roles:
-        #             for j in self.leveling_prefix:
-        #                 if discord.utils.get(after.guild.roles, name=j + self.leveling_roles[i][0]) in after.roles:
-        #                     await after.remove_roles(discord.utils.find(lambda r: r.name == j + self.leveling_roles[i][0], after.guild.roles))
-        pass
+        await ctx.send("Give the base role.")
+        try:
+            base_role = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author, timeout=180)
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long to respond. Try creating the leveling role set with the same name.")
+        base_role = await commands.RoleConverter().convert(ctx, base_role.content)
+        await ctx.send(f"Thank you for sending the base role. {base_role.mention}")
+        await ctx.send(f"I'll add your levelling role set with this ID {leveling_id}, you can use ID or Name.")
 
-    async def check_for_removed_role(self, before, after):
-        base_roles = await self.get_base_roles_for(after.guild)
-        removed_role = next(role for role in before.roles if role not in after.roles)
-        if removed_role.name in base_roles:
-            leveling_names = await self.get_all_names_of_leveling_roles(after.guild)
-            role_category = leveling_names[base_roles.index(removed_role.name)]
-            for role in await self.get_leveling_role_set(after.guild, role_category):
-                if role and role in after.roles:
-                    await after.remove_roles(role)
+        await self.bot.pg_conn.execute("""
+            INSERT INTO leveling_role_configuration_data
+            VALUES ($1, $2, $3, $4, $5, $6)
+            """, leveling_id, ctx.guild.id, name, roles_list, base_role.id, levels_list)
+        await ctx.send(f"I have added your levelling role set! This is the name: {name} and ID {leveling_id}")
+        await self.bot.pg_conn.execute("""
+            UPDATE id_data
+            SET leveling_role_id = leveling_role_id + 1
+            WHERE row_id = 1
+            """)
 
-    @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        enabled = await self.bot.pg_conn.fetchval("""
-                        SELECT enabled FROM cogs_data
+    @leveling_roles_sets.command(name='remove', aliases=['-'])
+    async def leveling_roles_sets_remove(self, ctx, name: Optional[str]):
+        row = await self.bot.pg_conn.fetchrow("""
+                DELETE FROM leveling_role_configuration_data
+                WHERE name = $1
+                RETURNING level_roles_id, name
+            """, name)
+        await ctx.send(f"Deleted the leveling roles set with name: {row['name']} or ID: {row['level_roles_id']}")
+
+    @leveling_roles_sets.group(name="leveling_roles_list", aliases=['lrl'], invoke_without_command=True)
+    async def leveling_roles_sets_leveling_roles_list(self, ctx, name: str):
+        row = await self.bot.pg_conn.fetchrow("""
+            SELECT levels, leveling_roles_ids, base_role_id FROM leveling_role_configuration_data
+            WHERE name = $1 AND guild_id = $2
+            """, name, ctx.guild.id)
+        if not row:
+            return await ctx.send("I can't find the leveling role set with the name given!")
+        embed = discord.Embed()
+        embed.title = f"Available roles in {name}"
+        msg = ""
+        for level, (role_index, role) in zip(row['levels'], enumerate(row['leveling_roles_ids'], start=1)):
+            role_mention = await commands.RoleConverter().convert(ctx, str(role))
+            msg += f"{role_index}. {level=} -> {role_mention.mention}\n"
+        base_role = await commands.RoleConverter().convert(ctx, str(row['base_role_id']))
+        msg += f"Base role {base_role.mention}"
+        embed.description = msg
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_roles_sets_leveling_roles_list.command(name="add", aliases=['+'], invoke_without_command=True)
+    async def leveling_roles_sets_leveling_roles_list_add(self, ctx, name: str, level: int, role: discord.Role):
+        row = await self.bot.pg_conn.fetchrow("""
+            SELECT levels, leveling_roles_ids FROM leveling_role_configuration_data
+            WHERE guild_id = $1 AND name = $2
+            """, ctx.guild.id, name)
+        if not row:
+            return await ctx.send("I can't find the leveling role set with the name given!")
+        list_of_leveling_role_ids, role_, index = insert_or_append(row['leveling_roles_ids'], role.id)
+        list_of_levels, level, index_1 = insert_or_append(row['levels'], level)
+        await self.bot.pg_conn.execute("""
+            UPDATE leveling_role_configuration_data
+            SET levels = $1,
+                leveling_roles_ids = $2
+            WHERE guild_id = $4 AND name = $3
+            """, list_of_levels, list_of_leveling_role_ids, name, ctx.guild.id)
+        await ctx.send(f"I've added the leveling role to the given set. {level} -> {role.mention}")
+
+    @leveling_roles_sets_leveling_roles_list.command(name="remove", aliases=['-'], invoke_without_command=True)
+    async def leveling_roles_sets_leveling_roles_list_remove(self, ctx, name: str, level: int, role: discord.Role):
+        row = await self.bot.pg_conn.fetchrow("""
+            SELECT levels, leveling_roles_ids FROM leveling_role_configuration_data
+            WHERE guild_id = $1 AND name = $2
+            """, ctx.guild.id, name)
+        if not row:
+            return await ctx.send("I can't find the leveling role set with the name given!")
+        list_of_leveling_role_ids, role_, index = pop_or_remove(row['leveling_roles_ids'], role.id)
+        list_of_levels, level, index_1 = pop_or_remove(row['levels'], level)
+        await self.bot.pg_conn.execute("""
+            UPDATE leveling_role_configuration_data
+            SET levels = $1,
+                leveling_roles_ids = $2
+            WHERE guild_id = $4 AND name = $3
+            """, list_of_levels, list_of_leveling_role_ids, name, ctx.guild.id)
+        await ctx.send(f"I've removed the leveling role to the given set. {level} -> {role.mention}")
+
+    @leveling_roles_sets_leveling_roles_list.command(name="update_baserole", aliases=['ubr'])
+    async def leveling_roles_sets_leveling_roles_list_update_baserole(self, ctx, name: str, new_baserole: discord.Role):
+        base_role_id = await self.bot.pg_conn.fetchval("""
+            SELECT base_role_id FROM leveling_role_configuration_data
+            WHERE guild_id = $1 AND name = $2
+            """, ctx.guild.id, name)
+        if not base_role_id:
+            return await ctx.send("I can't find the leveling role set with the name given!")
+        await self.bot.pg_conn.execute("""
+            UPDATE leveling_role_configuration_data
+            SET base_role_id = $2
+            WHERE guild_id = $1 AND name = $3
+            """, ctx.guild.id, new_baserole.id, name)
+        await ctx.send(f"Updated base role for leveling role set {name}")
+
+    @leveling_roles_sets_leveling_roles_list.command(name="update_name", aliases=['u_n'])
+    async def leveling_roles_sets_leveling_roles_list_update_name(self, ctx, name: str, new_name: str):
+        old_name = await self.bot.pg_conn.fetchval("""
+                    SELECT name FROM leveling_role_configuration_data
+                    WHERE guild_id = $1 AND name = $2
+                    """, ctx.guild.id, name)
+        if not old_name:
+            return await ctx.send("I can't find the leveling role set with the name given!")
+        await self.bot.pg_conn.execute("""
+                    UPDATE leveling_role_configuration_data
+                    SET name = $2
+                    WHERE guild_id = $1 AND name = $3
+                    """, ctx.guild.id, new_name, name)
+        await ctx.send(f"Updated name for leveling role set {name}")
+
+    @commands.group(aliases=['lblr', 'lvl_blr'], help="Returns all level up messages of this server.")
+    async def leveling_blacklist_role(self, ctx: commands.Context):
+        blacklisted_roles = await self.bot.pg_conn.fetchval("""
+            SELECT blacklist_roles FROM leveling_blacklist_data
+            WHERE guild_id = $1
+            """, ctx.guild.id)
+        if not blacklisted_roles:
+            await self.bot.pg_conn.execute("""
+                INSERT INTO leveling_message_destination_data (guild_id)
+                VALUES ($1)
+                """, ctx.guild.id)
+        embed = discord.Embed(title="Available blacklists for roles.")
+        msg = ""
+        for index, message in enumerate(blacklisted_roles, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_blacklist_role.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_blacklist_role_add(self, ctx: commands.Context, role: discord.Role):
+        blacklisted_roles = await self.bot.pg_conn.fetchval("""
+                    SELECT blacklist_roles FROM leveling_blacklist_data
+                    WHERE guild_id = $1
+                    """, ctx.guild.id)
+        if not blacklisted_roles:
+            blacklisted_roles = []
+        blacklisted_roles = await convert_to(blacklisted_roles, Converters.role_converter, ctx.guild)
+        blacklisted_roles, role_1, _ = insert_or_append(blacklisted_roles, role)
+        await self.bot.pg_conn.execute("""
+            UPDATE leveling_blacklist_data
+            SET blacklist_roles = $2
+            WHERE guild_id = $1
+            """, ctx.guild.id, blacklisted_roles)
+        await ctx.send(f"Added blacklist for role {role.mention}.")
+
+    @leveling_blacklist_role.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def level_blacklist_role_remove(self, ctx: commands.Context, role: discord.Role):
+        blacklisted_roles = await self.bot.pg_conn.fetchval("""
+                            SELECT blacklist_roles FROM leveling_blacklist_data
+                            WHERE guild_id = $1
+                            """, ctx.guild.id)
+        if not blacklisted_roles:
+            blacklisted_roles = []
+        blacklisted_roles, role_1, _ = pop_or_remove(blacklisted_roles, role)
+        await self.bot.pg_conn.execute("""
+                    UPDATE leveling_blacklist_data
+                    SET blacklist_roles = $2
+                    WHERE guild_id = $1
+                    """, ctx.guild.id, blacklisted_roles)
+        await ctx.send(f"Removed blacklist for role {role.mention}.")
+
+    @commands.group(aliases=['lblc', 'lvl_blc'], help="Returns all level up messages of this server.")
+    async def leveling_blacklist_channel(self, ctx: commands.Context):
+        blacklisted_channels = await self.bot.pg_conn.fetchval("""
+                SELECT blacklist_channels FROM leveling_blacklist_data
+                WHERE guild_id = $1
+                """, ctx.guild.id)
+        if not blacklisted_channels:
+            await self.bot.pg_conn.execute("""
+                    INSERT INTO leveling_message_destination_data (guild_id)
+                    VALUES ($1)
+                    """, ctx.guild.id)
+        embed = discord.Embed(title="Available blacklists for channels.")
+        msg = ""
+        for index, message in enumerate(blacklisted_channels, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_blacklist_channel.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_blacklist_channel_add(self, ctx: commands.Context, channel: discord.Role):
+        blacklisted_channels = await self.bot.pg_conn.fetchval("""
+                        SELECT blacklist_channels FROM leveling_blacklist_data
                         WHERE guild_id = $1
-                        """, after.guild.id)
-        if f"Bot.cogs.{self.qualified_name}" in enabled:
+                        """, ctx.guild.id)
+        if not blacklisted_channels:
+            blacklisted_channels = []
+        blacklisted_channels = await convert_to(blacklisted_channels, Converters.channel_converter, ctx.guild)
+        blacklisted_channels, channel_1, _ = insert_or_append(blacklisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                UPDATE leveling_blacklist_data
+                SET blacklist_channels = $2
+                WHERE guild_id = $1
+                """, ctx.guild.id, blacklisted_channels)
+        await ctx.send(f"Added blacklist for channel {channel.mention}.")
 
-                if len(before.roles) < len(after.roles):
-                    new_role_1 = await self.check_new_role(before, after)
-                    await self.check_blacklist_status(new_role_1, after)
-                elif len(before.roles) > len(after.roles):
-                    await self.check_for_removed_role(before, after)
+    @leveling_blacklist_channel.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def leveling_blacklist_channel_remove(self, ctx: commands.Context, channel: discord.Role):
+        blacklisted_channels = await self.bot.pg_conn.fetchval("""
+                                SELECT blacklist_channels FROM leveling_blacklist_data
+                                WHERE guild_id = $1
+                                """, ctx.guild.id)
+        if not blacklisted_channels:
+            blacklisted_channels = []
+        blacklisted_channels, channel_1, _ = pop_or_remove(blacklisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                        UPDATE leveling_blacklist_data
+                        SET blacklist_channels = $2
+                        WHERE guild_id = $1
+                        """, ctx.guild.id, blacklisted_channels)
+        await ctx.send(f"Removed blacklist for channel {channel.mention}.")
+
+    @commands.group(aliases=['lwlc', 'lvl_wlc'], help="Returns all level up messages of this server.")
+    async def leveling_whitelist_channel(self, ctx: commands.Context):
+        whitelisted_channels = await self.bot.pg_conn.fetchval("""
+                    SELECT whitelist_channels FROM leveling_blacklist_data
+                    WHERE guild_id = $1
+                    """, ctx.guild.id)
+        if not whitelisted_channels:
+            await self.bot.pg_conn.execute("""
+                        INSERT INTO leveling_message_destination_data (guild_id)
+                        VALUES ($1)
+                        """, ctx.guild.id)
+        embed = discord.Embed(title="Available whitelists for channels.")
+        msg = ""
+        for index, message in enumerate(whitelisted_channels, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_whitelist_channel.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_whitelist_channel_add(self, ctx: commands.Context, channel: discord.Role):
+        whitelisted_channels = await self.bot.pg_conn.fetchval("""
+                            SELECT whitelist_channels FROM leveling_blacklist_data
+                            WHERE guild_id = $1
+                            """, ctx.guild.id)
+        if not whitelisted_channels:
+            whitelisted_channels = []
+        whitelisted_channels = await convert_to(whitelisted_channels, Converters.channel_converter, ctx.guild)
+        whitelisted_channels, channel_1, _ = insert_or_append(whitelisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                    UPDATE leveling_blacklist_data
+                    SET whitelist_channels = $2
+                    WHERE guild_id = $1
+                    """, ctx.guild.id, whitelisted_channels)
+        await ctx.send(f"Added whitelist for channel {channel.mention}.")
+
+    @leveling_whitelist_channel.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def level_up_message_remove(self, ctx: commands.Context, channel: discord.Role):
+        whitelisted_channels = await self.bot.pg_conn.fetchval("""
+                                    SELECT whitelist_channels FROM leveling_blacklist_data
+                                    WHERE guild_id = $1
+                                    """, ctx.guild.id)
+        if not whitelisted_channels:
+            whitelisted_channels = []
+        whitelisted_channels, channel_1, _ = pop_or_remove(whitelisted_channels, channel)
+        await self.bot.pg_conn.execute("""
+                            UPDATE leveling_blacklist_data
+                            SET whitelist_channels = $2
+                            WHERE guild_id = $1
+                            """, ctx.guild.id, whitelisted_channels)
+        await ctx.send(f"Removed whitelist for channel {channel.mention}.")
+
+    @commands.group(aliases=['lblr', 'lvl_blr'], help="Returns all level up messages of this server.")
+    async def leveling_whitelist_role(self, ctx: commands.Context):
+        whitelisted_roles = await self.bot.pg_conn.fetchval("""
+            SELECT whitelist_roles FROM leveling_blacklist_data
+            WHERE guild_id = $1
+            """, ctx.guild.id)
+        if not whitelisted_roles:
+            await self.bot.pg_conn.execute("""
+                INSERT INTO leveling_message_destination_data (guild_id)
+                VALUES ($1)
+                """, ctx.guild.id)
+        embed = discord.Embed(title="Available whitelists for roles.")
+        msg = ""
+        for index, message in enumerate(whitelisted_roles, start=1):
+            msg += f"{index}. {message}\n"
+
+        embed.description = msg
+        embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+
+    @leveling_whitelist_role.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
+    async def leveling_whitelist_role_add(self, ctx: commands.Context, role: discord.Role):
+        whitelisted_roles = await self.bot.pg_conn.fetchval("""
+                    SELECT whitelist_roles FROM leveling_blacklist_data
+                    WHERE guild_id = $1
+                    """, ctx.guild.id)
+        if not whitelisted_roles:
+            whitelisted_roles = []
+        whitelisted_roles = await convert_to(whitelisted_roles, Converters.role_converter, ctx.guild)
+        whitelisted_roles, role_1, _ = insert_or_append(whitelisted_roles, role)
+        await self.bot.pg_conn.execute("""
+            UPDATE leveling_blacklist_data
+            SET whitelist_roles = $2
+            WHERE guild_id = $1
+            """, ctx.guild.id, whitelisted_roles)
+        await ctx.send(f"Added whitelist for role {role.mention}.")
+
+    @leveling_whitelist_role.command(name="remove", aliases=['-'], help="Removes a level up message from the last index if index not given else pop the passed index.")
+    async def level_whitelist_role_remove(self, ctx: commands.Context, role: discord.Role):
+        whitelisted_roles = await self.bot.pg_conn.fetchval("""
+                            SELECT whitelist_roles FROM leveling_blacklist_data
+                            WHERE guild_id = $1
+                            """, ctx.guild.id)
+        if not whitelisted_roles:
+            whitelisted_roles = []
+        whitelisted_roles, role_1, _ = pop_or_remove(whitelisted_roles, role)
+        await self.bot.pg_conn.execute("""
+                    UPDATE leveling_blacklist_data
+                    SET whitelist_roles = $2
+                    WHERE guild_id = $1
+                    """, ctx.guild.id, whitelisted_roles)
+        await ctx.send(f"Removed whitelist for role {role.mention}.")
 
 
 def setup(bot):

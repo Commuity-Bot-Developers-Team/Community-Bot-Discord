@@ -384,6 +384,11 @@ class Fun(commands.Cog):
         response = random.choice(brooklyn_99_quotes)
         await ctx.send(response)
 
+    @commands.command()
+    async def mirror_text(self, ctx, *, message: str):
+        reversed_message = list(reversed(list(message)))
+        await ctx.send(message+"".join(reversed_message))
+
 
 def setup(bot):
     bot.add_cog(Fun(bot))

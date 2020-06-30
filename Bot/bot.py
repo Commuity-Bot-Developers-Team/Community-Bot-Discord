@@ -1,3 +1,4 @@
+import asyncio
 import os
 import random
 
@@ -60,20 +61,22 @@ class BotClass(commands.AutoShardedBot):
             self.pg_conn = await asyncpg.create_pool(self.database_url)
 
     async def on_ready(self):
+        await self.wait_until_ready()
+        await asyncio.sleep(5)
         await self.change_presence(activity=discord.Activity(name="earlbot.xyz", type=discord.ActivityType.listening), status=discord.Status.dnd)
         random_user = random.choice(self.users)
         await self.is_owner(random_user)
         print(f'\n\n{self.user} (id: {self.user.id}) is connected to the following guilds:\n', end="")
         for guild_index, guild in enumerate(self.guilds):
             print(
-                f' - {guild.name} (id: {guild.id})'
+                f' - {guild.name} (id: {guild.id}) ({guild.member_count})'
             )
         print("\n")
-        self.get_guild(718037656893784064).get_member(694874134689087504)
-        await self.get_channel(718037656893784069).send(f"{self.get_guild(718037656893784064).get_member(694874134689087504)} Going to write exams?")
-        await self.get_channel(718037656893784069).send("ALL THE BEST!!!")
-        await self.get_channel(718037656893784069).send("MAY GOD BLESS YOU")
-        await self.get_channel(718037656893784069).send("HOPE YOU GET FULL MARKS IN YOUR EXAMS!!!!")
+        # self.get_guild(718037656893784064).get_member(694874134689087504)
+        # await self.get_channel(718037656893784069).send(f"{self.get_guild(718037656893784064).get_member(694874134689087504)} Going to write exams?")
+        # await self.get_channel(718037656893784069).send("ALL THE BEST!!!")
+        # await self.get_channel(718037656893784069).send("MAY GOD BLESS YOU")
+        # await self.get_channel(718037656893784069).send("HOPE YOU GET FULL MARKS IN YOUR EXAMS!!!!")
         for guild_index, guild in enumerate(self.guilds):
             members = '\n - '.join([f"{member} (id: {member.id})" for member in guild.members])
             print(f'{guild.name} (id: {guild.id})')
@@ -158,4 +161,3 @@ class BotClass(commands.AutoShardedBot):
                 INSERT INTO cogs_data (guild_id, enabled, disabled)
                 VALUES ($1, $2, $3)
                 """, guild.id, self.init_cogs, ["None"])
-
