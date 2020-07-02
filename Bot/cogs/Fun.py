@@ -294,7 +294,7 @@ class Fun(commands.Cog):
             elif human_response.content == 'scissors' and pc_response == 'scissors':
                 await ctx.send("Its a tie!")
 
-        score = f"Score: {ctx.author.display_name.title} = ``{user}`` \n{self.bot.user.name.capitalize} = ``{pc}``"
+        score = f"Score: {ctx.author.display_name.title()} = ``{user}`` \n{self.bot.user.name.capitalize()} = ``{pc}``"
         win_emb = discord.Embed(title="Player wins the game!!", color=0xFFFF00)
         win_emb.set_image(url="https://t3.ftcdn.net/jpg/03/03/52/48/240_F_303524879_h1oC0wOJsh8uqo0aZf89lNJg7njTa5A8.jpg")
         win_emb.description = score
