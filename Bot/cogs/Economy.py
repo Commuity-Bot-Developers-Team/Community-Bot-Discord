@@ -11,7 +11,7 @@ class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
  
- 
+ """when bot is ready it checks if the users are already registered in db else it registers"""
     @commands.Cog.listener()
     async def on_ready(self):
         for m in self.bot.get_all_members():
@@ -23,24 +23,14 @@ class Economy(commands.Cog):
 
     
     
-    
+ """registers a new user in the db """   
     @commands.Cog.listener()
-<<<<<<< HEAD
-    async def on_member_join(self,member):
-        member_id = member.id
-        check = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = ?", (m,))
-        
-        if not check:
-            await self.bot.pg_conn.execute("INSERT INTO users_data (coins,xp,level,user_id,passive,bank,bread,messages) VALUES (0,0,0,$1,'off',0,0,0)",member_id)
-   
-=======
     async def on_member_join(self, member):
         check = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = $1", member.id)
 
         if not check:
             await self.bot.pg_conn.execute("INSERT INTO users_data (coins,xp,level,user_id,passive,bank,bread,messages) VALUES (0,0,0,$1,'off',0,0,0)", member.id)
-
->>>>>>> 590216024b474735ac327767a4d792270aeb5336
+"""command to check balance"""
     @commands.command()
     async def bal(self,ctx):
         member_id = ctx.author.id
@@ -55,7 +45,7 @@ class Economy(commands.Cog):
         )
         await ctx.send(embed=bal_info)
     
-    
+ """command that shows users backpack with items he bought"""   
     @commands.command()
     async def backpack(self,ctx):
         member_id = ctx.author.id
@@ -69,7 +59,7 @@ class Economy(commands.Cog):
         )
         await ctx.send(embed=backpack_info)
     
-    
+"""a rob command that gets money from a member and puts it in users wallet"""    
     @commands.command()
     async def rob(self,ctx, member: discord.Member):
         victim = member.id
@@ -114,7 +104,7 @@ class Economy(commands.Cog):
             )
             await ctx.send(embed=e)
     
-    
+ """turns passive mode on or off"""   
     @commands.command()
     async def passive(self,ctx, onoff):
         user = ctx.author.id 
@@ -138,7 +128,7 @@ class Economy(commands.Cog):
 
             await ctx.send(embed=off)
     
-     
+ """ gifts a member n coins"""    
     @commands.command()
     async def gift(self,ctx, member: discord.Member, amount):
         user = ctx.author.id
@@ -175,7 +165,7 @@ class Economy(commands.Cog):
             
                 
     
-    
+ """deposits coins into bank"""   
     @commands.command(aliases=["dep", "d"])
     async def deposit(self,ctx, amount):
         user = ctx.author.id
@@ -201,7 +191,7 @@ class Economy(commands.Cog):
             )
             await ctx.send(embed=e)
     
-    
+ """withdraws coins from bank"""   
     @commands.command(aliases=["with", "w"])
     async def withdraw(self,ctx, amount):
         user = ctx.author.id
@@ -231,33 +221,14 @@ class Economy(commands.Cog):
     
   
 
-<<<<<<< HEAD
-    
-    
-    @commands.command()
-    async def level(self,ctx):
-=======
-    @commands.command(name="eco_level")
-    async def eco_level(self, ctx):
->>>>>>> 590216024b474735ac327767a4d792270aeb5336
-        user = ctx.author.id
-        user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
-        level = user_info["level"]
-        xp = user_info["xp"]
-        e = discord.Embed(
-            colour=discord.Colour.green(),
-            description=f"""
-        XP - ``{xp}``.
-        """
-        )
-        await ctx.send(embed=e)
+
     
     
  
     
 
     
-    
+ """command for searching areas for money"""   
     @commands.command()
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def search(self,ctx):
@@ -417,7 +388,8 @@ class Economy(commands.Cog):
                     await ctx.send(embed=e)
                     await self.bot.pg_conn.execute(
                         "UPDATE users_data SET coins = $1 WHERE user_id = $2", coins, user)
-      
+
+ """command for begging money"""     
     @commands.command()
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def beg(self,ctx):
@@ -473,7 +445,7 @@ class Economy(commands.Cog):
     
     
     
-    
+ """help command"""   
     @commands.command()
     async def help_economy(self,ctx):
         embed = discord.Embed(
@@ -511,20 +483,15 @@ class Economy(commands.Cog):
         embed.add_field(name=f"!shop",
                         value=f"Buy amazing stuff!", inline=True)
         await ctx.send(embed=embed)
-<<<<<<< HEAD
-    
-    @commands.command()
-    async def leaderboard(self,ctx):
-=======
 
-    @commands.command(name="eco_leaderboard")
+"""sends top 5 richest users"""
+    @commands.command(name="richest")
     async def eco_leaderboard(self, ctx):
->>>>>>> 590216024b474735ac327767a4d792270aeb5336
         members = ctx.guild.members
         i_d = [member.id for member in members]
         lb = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = ANY($1::BIGINT[]) ORDER BY coins DESC LIMIT 5 ",i_d)
         print(lb)
-
+"""command for betting"""
     @commands.command()
     @commands.cooldown(1, 20, commands.BucketType.user)
     async def bet(self,ctx, num):
@@ -572,7 +539,7 @@ class Economy(commands.Cog):
             await ctx.send(embed=e)
         else:
             raise error
-    
+ """command for working"""   
     @commands.command()
     @commands.cooldown(1, 3600, commands.BucketType.user)
     async def work(self,ctx):
@@ -605,7 +572,8 @@ class Economy(commands.Cog):
             await ctx.send(embed=e)
         else:
             raise error
-    
+
+"""shop system"""    
     @commands.command()
     async def shop(self,ctx):
         user = ctx.author.id
