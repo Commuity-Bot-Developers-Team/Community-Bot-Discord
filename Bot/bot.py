@@ -29,6 +29,10 @@ class BotClass(commands.AutoShardedBot):
             if file.endswith('.py') and not (file.startswith('_') or file.startswith('not')):
                 self.load_extension(f'Bot.cogs.{file[:-3]}')
 
+        # loading dispatcher
+        dispatcher = "Bot.core.Dispatcher"
+        self.load_extension(dispatcher)
+        print("Loaded dispatcher.")
         # connecting to database
         self.loop.run_until_complete(self.connection_of_postgres())
 

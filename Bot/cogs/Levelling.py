@@ -339,7 +339,7 @@ class Levelling(commands.Cog):
     async def check_new_role(self, before, after):
         base_roles = await self.get_base_roles_for(after.guild)
         new_role = next(role for role in after.roles if role not in before.roles)
-        if after.bot is True and new_role.name in self.get_all_leveling_roles_set_for(after.guild):
+        if after.bot is True and new_role.name in await self.get_all_leveling_roles_set_for(after.guild):
             await after.remove_roles(new_role)
         elif new_role.name in base_roles:
             # set user xps to 0

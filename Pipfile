@@ -6,15 +6,16 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-discord-py = {editable = true,extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "master"}
+discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "master"}
 parsedatetime = "*"
 python-dotenv = "*"
 asyncpg = "*"
-menus = {editable = true,git = "https://github.com/Rapptz/discord-ext-menus"}
+menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
 python-dateutil = "*"
 youtube-dl = "*"
 ffmpeg = "*"
-discord = {extras = ["voice"], version = "*"}
+better-profanity = "*"
+wavelink = "*"
 
 [requires]
 python_version = "3.8"

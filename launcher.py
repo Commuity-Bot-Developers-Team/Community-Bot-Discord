@@ -8,9 +8,9 @@ from Bot.bot import BotClass
 
 
 def convert_any_to_bool(value: Any):
-    if value in ('True', 'TRUE', 1, 'Enabled', 'Enable'):
+    if value in ('True', 'TRUE', '1', 'Enabled', 'Enable'):
         return True
-    elif value in ('False', 'FALSE', 0, 'Disabled', 'Disable'):
+    elif value in ('False', 'FALSE', '0', 'Disabled', 'Disable'):
         return False
 
 
