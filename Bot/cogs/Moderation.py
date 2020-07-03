@@ -1,9 +1,8 @@
-from typing import Optional
-
 import discord
 from discord.ext import commands
 
 from ..utils.moderation import ModerationCommands
+from ..utils.time_bot import FutureTime
 
 
 class Moderation(commands.Cog):
@@ -54,21 +53,23 @@ class Moderation(commands.Cog):
         await self.moderation_commands.unmute_function(ctx.message, targets=members, reason=reason)
 
     @commands.command(name="tempmute")
-    async def temp_mute_command(self, ctx, members: commands.Greedy[discord.Member], time: Optional[str], *, reason):
+    async def temp_mute_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to muted.")
         await self.moderation_commands.mute_function(ctx.message, targets=members, reason=reason, time=time)
 
     @commands.command(name='tempban')
-    async def temp_ban_command(self, ctx, time: Optional[str], members: commands.Greedy[discord.Member], *, reason):
+    async def temp_ban_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to temporarily banned.")
         await self.moderation_commands.ban_function(message=ctx.message, targets=members, reason=reason, time=time)
+
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def clear(self,ctx,limit):
+    async def clear(self, ctx, limit: int):
         await ctx.message.delete()
-        await ctx.channel.purge(limit = int(limit))
+        await ctx.channel.purge(limit=limit)
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))

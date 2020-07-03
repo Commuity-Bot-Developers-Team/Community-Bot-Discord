@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import random
 
@@ -34,7 +35,7 @@ class BotClass(commands.AutoShardedBot):
         self.load_extension(dispatcher)
         print("Loaded dispatcher.")
         # connecting to database
-        self.loop.run_until_complete(self.connection_of_postgres())
+        self.loop.run_until_complete(self.connection_of_postgres(**{'ssl': 'require'} if self.ssl_required else {}))
 
         # start the tasks
         self.update_count_data_according_to_guild.start()
@@ -58,11 +59,17 @@ class BotClass(commands.AutoShardedBot):
     def run(self, *args, **kwargs):
         super(BotClass, self).run(*args, **kwargs)
 
-    async def connection_of_postgres(self):
-        if self.ssl_required:
-            self.pg_conn = await asyncpg.create_pool(self.database_url, ssl='require')
-        else:
-            self.pg_conn = await asyncpg.create_pool(self.database_url)
+    async def connection_of_postgres(self, **kwargs):
+        def _encode_jsonb(value):
+            return json.dumps(value)
+
+        def _decode_jsonb(value):
+            return json.loads(value)
+
+        async def init(con):
+            await con.set_type_codec('jsonb', schema='pg_catalog', encoder=_encode_jsonb, decoder=_decode_jsonb,
+                                     format='text')
+        self.pg_conn = await asyncpg.create_pool(self.database_url, init=init, **kwargs)
 
     async def on_ready(self):
         await self.wait_until_ready()

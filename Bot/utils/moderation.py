@@ -27,7 +27,7 @@ class ModerationCommands:
         for target in targets:
             await message.guild.unban(target, reason=reason)
 
-    async def mute_function(self, message, targets: List[discord.Member], reason, time, reply=True):
+    async def mute_function(self, message, targets: List[discord.Member], reason, time=None, reply=True):
         for target in targets:
             if muted_role := discord.utils.get(target.guild.roles, name="Muted"):
                 await target.add_roles(muted_role, reason=reason)
