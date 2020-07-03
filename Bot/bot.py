@@ -1,11 +1,11 @@
 import asyncio
-import json
 import os
 import random
-
+import json
 import asyncpg
 import discord
 from discord.ext import commands, tasks
+from .utils import context
 
 from .utils.time_bot import format_duration
 
@@ -172,3 +172,11 @@ class BotClass(commands.AutoShardedBot):
                 INSERT INTO cogs_data (guild_id, enabled, disabled)
                 VALUES ($1, $2, $3)
                 """, guild.id, self.init_cogs, ["None"])
+
+    async def process_commands(self, message):
+        ctx = await self.get_context(message, cls=context.Context)
+        await self.invoke(ctx)
+
+    async def on_message(self, message):
+        await self.process_commands(message)
+
