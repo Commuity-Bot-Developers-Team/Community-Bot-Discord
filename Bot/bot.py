@@ -5,7 +5,7 @@ import json
 import asyncpg
 import discord
 from discord.ext import commands, tasks
-from .utils import context
+from .core import Context
 
 from .utils.time_bot import format_duration
 
@@ -174,9 +174,8 @@ class BotClass(commands.AutoShardedBot):
                 """, guild.id, self.init_cogs, ["None"])
 
     async def process_commands(self, message):
-        ctx = await self.get_context(message, cls=context.Context)
+        ctx = await self.get_context(message, cls=Context.Context)
         await self.invoke(ctx)
 
     async def on_message(self, message):
         await self.process_commands(message)
-

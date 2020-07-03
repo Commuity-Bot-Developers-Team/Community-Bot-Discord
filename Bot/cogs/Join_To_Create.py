@@ -12,8 +12,10 @@ def has_voice_channel():
     async def pred(ctx):
         if ctx.guild is None:
             raise NoVoiceChannel("JTC commands won't work in DMs.")
-        query = """SELECT * FROM jtc_users where
-                    user_id = $1 and guild_id = $2"""
+        query = """
+        SELECT * FROM jtc_users_data 
+        WHERE user_id = $1 AND guild_id = $2
+        """
         check_chan = await ctx.bot.pg_conn.fetchrow(query, ctx.author.id, ctx.guild.id)
         if check_chan is None:
             raise NoVoiceChannel("You don't own any channel.")
@@ -26,7 +28,10 @@ def guild_has_voice_channel():
     async def pred(ctx):
         if ctx.guild is None:
             raise NoVoiceChannel("JTC commands won't work in DMs.")
-        query = """SELECT * FROM jtc_guilds where guild_id = $1"""
+        query = """
+        SELECT * FROM jtc_guilds_data
+        WHERE guild_id = $1
+        """
         check_chan = await ctx.bot.pg_conn.fetchrow(query, ctx.guild.id)
         if check_chan is None:
             raise NoVoiceChannel("JTC channel not found in this server.")
@@ -70,7 +75,10 @@ class Join_To_Create(commands.Cog):
             await ctx.send(error)
 
     async def get_user_channel(self, ctx):
-        query = """Select * from jtc_users where user_id = $1 and guild_id = $2"""
+        query = """
+        SELECT * FROM jtc_users_data 
+        WHERE user_id = $1 AND guild_id = $2
+        """
         user = MemberVoice(await self.bot.pg_conn.fetchrow(query, ctx.author.id, ctx.guild.id))
         channel = self.bot.get_channel(user.voice_id)
         return channel
@@ -79,23 +87,28 @@ class Join_To_Create(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         if after.channel is not None:
             guild_id = member.guild.id
-            query = """Select * from jtc_guilds
-            where guild_id = $1"""
+            query = """
+            SELECT * FROM jtc_guilds_data
+            where guild_id = $1
+            """
             record = await self.bot.pg_conn.fetchrow(query, guild_id)
             guild_settings = GuildVoice(record)
             if after.channel.id == guild_settings.voice_id:
-                query = """Select * from jtc_settings where user_id = $1"""
+                query = """
+                SELECT * FROM jtc_settings_data 
+                WHERE user_id = $1
+                """
                 record = await self.bot.pg_conn.fetchrow(query, member.id)
                 member_settings = MemberVoiceSettings(record, member)
                 category = discord.Object(id=guild_settings.category_id)
                 channel = await member.guild.create_voice_channel(name=member_settings.name,
                                                                   user_limit=member_settings.limit,
                                                                   category=category)
-                query = """Insert into jtc_users (guild_id, user_id, voice_id) VALUES ($1, $2, $3)"""
+                query = """Insert into jtc_users_data (guild_id, user_id, channel_id) VALUES ($1, $2, $3)"""
                 await member.move_to(channel)
                 await self.bot.pg_conn.execute(query, member.guild.id, member.id, channel.id)
         if before.channel is not None:
-            query = """Select * from jtc_users where voice_id = $1"""
+            query = """Select * from jtc_users_data where channel_id = $1"""
             check_chan = await self.bot.pg_conn.fetchrow(query, before.channel.id)
             if check_chan:
                 channel = self.bot.get_channel(check_chan['voice_id'])
@@ -104,23 +117,26 @@ class Join_To_Create(commands.Cog):
             if channel:
                 if len(channel.members) == 0:
                     await channel.delete()
-                    delete_query = "Delete from jtc_users where voice_id = $1"
+                    delete_query = "Delete from jtc_users_data where channel_id = $1"
                     await self.bot.pg_conn.execute(delete_query, before.channel.id)
 
     @commands.group(invoke_without_command=True)
     async def voice(self, ctx):
         pass
 
-    @voice.command(name='setup', usage='')
+    @voice.command(name='setup')
     @commands.guild_only()
     async def voice_setup(self, ctx):
         """Setup's join to create (Temporary voice channels in your server.)"""
-        query = """Select * from jtc_guilds where guild_id = $1"""
-        existing_ = await ctx.bot.pg_conn.fetchrow(query, ctx.guild.id)
-        query = """Insert into jtc_guilds (voice_id, category_id, guild_id) VALUES ($1, $2, $3)"""
+        existing_ = await ctx.bot.pg_conn.fetchrow("""
+        SELECT * FROM jtc_guilds_data
+        WHERE guild_id = $1
+        """, ctx.guild.id)
+
+        query = """INSERT INTO jtc_guilds_data (voice_channel_id, category_id, guild_id) VALUES ($1, $2, $3)"""
         if existing_:
             confirm = await ctx.prompt("Looks like JTC already set up here.? Do you want to overwrite it?.")
-            query = """Update jtc_guilds SET voice_id = $1, category_id = $2 where guild_id = $3)"""
+            query = """Update jtc_guilds_data SET voice_channel_id = $1, category_id = $2 where guild_id = $3"""
             if not confirm:
                 return
         await ctx.send("Enter the name of category you want to set.")
@@ -212,7 +228,7 @@ class Join_To_Create(commands.Cog):
                 f' :ghost:')
         overwrites.read_messages = True
         await channel.set_permissions(member_or_role, overwrite=overwrites)
-        await ctx.channel.send(f'{ctx.author.mention} You have permited {member_or_role.name}'
+        await ctx.channel.send(f'{ctx.author.mention} You have permitted {member_or_role.name}'
                                f' to view your channel. ✅')
 
     @voice.command(name='permit', aliases=['allow'], usage='(member/role)')
@@ -263,12 +279,12 @@ class Join_To_Create(commands.Cog):
         await channel.edit(user_limit=limit)
         await ctx.channel.send(f'{ctx.author.mention} You have set the channel limit to'
                                f' be ' + '{}!'.format(limit))
-        query = """Select * from jtc_settings where user_id = $1"""
+        query = """Select * from jtc_settings_data where user_id = $1"""
         check = await self.bot.pg_conn.execute(query, ctx.author.id)
         if check is None:
-            query = """Insert into jtc_settings (name, voice_limit, user_id) VALUES ($1, $2, $3)"""
+            query = """Insert into jtc_settings_data (name, voice_limit, user_id) VALUES ($1, $2, $3)"""
         else:
-            query = """Update jtc_settings set name = $1, voice_limit = $2 where user_id = $3"""
+            query = """Update jtc_settings_data set name = $1, voice_limit = $2 where user_id = $3"""
         settings = MemberVoiceSettings(check, ctx.author)
         await self.bot.pg_conn.execute(query, settings.name, limit, ctx.author.id)
 
@@ -285,12 +301,12 @@ class Join_To_Create(commands.Cog):
         await channel.edit(name=name)
         await ctx.channel.send(f'{ctx.author.mention} You have changed the'
                                f' channel name to ' + '{}!'.format(name))
-        query = """Select * from jtc_settings where user_id = $1"""
+        query = """Select * from jtc_settings_data where user_id = $1"""
         check = await self.bot.pg_conn.execute(query, ctx.author.id)
         if check is None:
-            query = """Insert into jtc_settings (name, voice_limit, user_id) VALUES ($1, $2, $3)"""
+            query = """Insert into jtc_settings_data (name, voice_limit, user_id) VALUES ($1, $2, $3)"""
         else:
-            query = """Update jtc_settings set name = $1, voice_limit = $2 where user_id = $3"""
+            query = """Update jtc_settings_data set name = $1, voice_limit = $2 where user_id = $3"""
         settings = MemberVoiceSettings(check, ctx.author)
         await self.bot.pg_conn.execute(query, name, settings.limit, ctx.author.id)
 
@@ -302,7 +318,7 @@ class Join_To_Create(commands.Cog):
          You must be in voice channel."""
         if ctx.author.voice is None:
             return await ctx.send("You are not in any voice channel.")
-        query = """Select * from jtc_users where voice_id = $1"""
+        query = """Select * from jtc_users_data where channel_id = $1"""
         record = await self.bot.pg_conn.fetchrow(query, ctx.author.voice.channel.id)
         if record is None:
             return await ctx.send("You can't claim that channel.")
@@ -312,7 +328,7 @@ class Join_To_Create(commands.Cog):
         owner = self.bot.get_user(record.owner) or (await self.bot.fetch_user(record.owner))
         if owner in ctx.author.voice.channel.members:
             return await ctx.send(f"This channel is already owned by {owner}")
-        query = """Update jtc_users set user_id = $1 where voice_id = $2"""
+        query = """Update jtc_users_data set user_id = $1 where channel_id = $2"""
         await self.bot.pg_conn.execute(query, record.voice_id)
         await ctx.send("Successfully transferred channel ownership to you.")
 
@@ -347,8 +363,8 @@ class Join_To_Create(commands.Cog):
     async def check_empty_channels(self):
         """A task that loops every 1 hour to check if any channel have 0 members and still not deleted.
         It happens sometimes so we have to check it every one hour."""
-        records = await self.bot.pg_conn.fetch("Select * from jtc_users")
-        query = """Delete from jtc_users where voice_id = $1"""
+        records = await self.bot.pg_conn.fetch("Select * from jtc_users_data")
+        query = """Delete from jtc_users_data where channel_id = $1"""
         for record in records:
             channel_id = record['voice_id']
             channel = self.bot.get_channel(channel_id)
