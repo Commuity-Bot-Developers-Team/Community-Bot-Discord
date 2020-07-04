@@ -5,9 +5,10 @@ import json
 import asyncpg
 import discord
 from discord.ext import commands, tasks
-from .core import Context
 
-from .utils.time_bot import format_duration
+from .core import Context
+from .core import Errors
+from .utils.time_bot import human_timedelta
 
 
 class BotClass(commands.AutoShardedBot):
@@ -122,6 +123,12 @@ class BotClass(commands.AutoShardedBot):
         elif isinstance(error, commands.CheckAnyFailure):
             await ctx.send("".join(error.args))
 
+        elif isinstance(error, Errors.DisabledCogError):
+            await ctx.send("The module which contains this command is disabled.")
+
+        elif isinstance(error, Errors.BlacklistedMemberError):
+            await ctx.send("You're blacklisted from using from using this bot or specific command.")
+
         elif isinstance(error, commands.CheckFailure):
             await ctx.send("".join(error.args))
 
@@ -131,11 +138,14 @@ class BotClass(commands.AutoShardedBot):
         elif isinstance(error, commands.NotOwner):
             await ctx.send("You're not a owner till now!")
 
+        elif isinstance(error, Errors.NotGuildOwner):
+            await ctx.send("You're not a guild owner.")
+
         elif isinstance(error, commands.NoPrivateMessage):
             await ctx.send("You can't send this commands here!")
 
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"The command you send is on cooldown! Try again after {format_duration(int(error.retry_after))}.")
+            await ctx.send(f"The command you send is on cooldown! Try again after {human_timedelta(int(error.retry_after))}.")
 
         elif isinstance(error, discord.Forbidden):
             await ctx.send(error.text)

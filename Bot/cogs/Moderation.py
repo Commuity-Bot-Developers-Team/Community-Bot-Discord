@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+from ..core.Errors import DisabledCogError
 from ..utils.moderation import ModerationCommands
 from ..utils.time_bot import FutureTime
 
@@ -20,7 +21,7 @@ class Moderation(commands.Cog):
                 """, ctx.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             return True
-        return False
+        raise DisabledCogError
 
     @commands.command(name='ban')
     async def ban_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
