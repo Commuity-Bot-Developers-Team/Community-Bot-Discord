@@ -3,6 +3,7 @@ from typing import Optional, Union
 import discord
 from discord.ext import commands
 
+from ..core.Errors import DisabledCogError
 from ..utils.converters import Converters, bool1, convert_to
 
 
@@ -21,7 +22,7 @@ class Reaction_Roles(commands.Cog):
                 """, ctx.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             return True
-        return False
+        raise DisabledCogError
 
     async def normal_reaction_role(self, payload):
         guild: discord.Guild = self.bot.get_guild(payload.guild_id)

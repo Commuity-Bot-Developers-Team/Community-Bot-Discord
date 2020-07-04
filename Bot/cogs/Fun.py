@@ -6,6 +6,8 @@ import aiohttp
 import discord
 from discord.ext import commands
 
+from Bot.core.Errors import DisabledCogError
+
 white_page = ":white_large_square:"
 X_Emoji = "<:X_:713988096487850024>"
 O_Emoji = "<:O_:713987935279775815>"
@@ -101,7 +103,7 @@ class Fun(commands.Cog):
                 """, ctx.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             return True
-        return False
+        raise DisabledCogError
 
     @commands.command(help="Starts a game of Tic Tac Toe that you can play with a friend")
     async def ttt(self, ctx, member: discord.Member):

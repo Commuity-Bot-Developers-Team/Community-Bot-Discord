@@ -1,3 +1,5 @@
 {
-    "python.pythonPath": "C:\\Users\\hrish\\.virtualenvs\\Community-Bot-Discord-C_EDtP7H\\Scripts\\python.exe"
+    "python.pythonPath": "C:\\Users\\kanna\\.virtualenvs\\Community-Bot-Discord-d53E2QLb",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true
 }

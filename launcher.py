@@ -18,6 +18,6 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 DATABASE_URL = os.getenv('DATABASE_URL')
 SSL_REQUIRED = convert_any_to_bool(os.getenv('SSL_REQUIRED'))
 
-bot = BotClass(database_url=DATABASE_URL, default_prefix=['eb!', 'eb?', 'eb$'], ssl_required=SSL_REQUIRED)
+bot = BotClass(database_url=DATABASE_URL, default_prefix=['ebb!', 'ebb?', 'ebb$'], ssl_required=SSL_REQUIRED)
 
 bot.run(TOKEN)

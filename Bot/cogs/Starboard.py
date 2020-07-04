@@ -4,6 +4,8 @@ import random
 import discord
 from discord.ext import commands
 
+from ..core.Errors import DisabledCogError
+
 
 def get_colour():
     return random.randint(0, 0xffffff)
@@ -22,7 +24,7 @@ class Starboard(commands.Cog):
                 """, ctx.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             return True
-        return False
+        raise DisabledCogError
 
     @commands.group(invoke_without_command=True)
     @commands.has_guild_permissions(administrator=True)
