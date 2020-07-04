@@ -174,8 +174,8 @@ class BotClass(commands.AutoShardedBot):
                 """, guild.id, self.init_cogs, ["None"])
 
     async def process_commands(self, message):
+        if message.author.bot:
+            return
+
         ctx = await self.get_context(message, cls=Context.Context)
         await self.invoke(ctx)
-
-    async def on_message(self, message):
-        await self.process_commands(message)
