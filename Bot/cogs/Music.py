@@ -519,6 +519,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if not player.is_playing:
             await player.do_next()
 
+        await player.invoke_controller()
+
     @commands.command()
     async def pause(self, ctx: commands.Context):
         """Pause the currently playing song."""
@@ -542,6 +544,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.set_pause(True)
         else:
             await ctx.send(f'{ctx.author.mention} has voted to pause the player.', delete_after=15)
+        await player.invoke_controller()
 
     @commands.command()
     async def resume(self, ctx: commands.Context):
@@ -566,6 +569,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.set_pause(False)
         else:
             await ctx.send(f'{ctx.author.mention} has voted to resume the player.', delete_after=15)
+
+        await player.invoke_controller()
 
     @commands.command()
     async def skip(self, ctx: commands.Context):
@@ -596,6 +601,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.stop()
         else:
             await ctx.send(f'{ctx.author.mention} has voted to skip the song.', delete_after=15)
+
+        await player.invoke_controller()
 
     @commands.command()
     async def stop(self, ctx: commands.Context):
@@ -634,6 +641,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.set_volume(vol)
         await ctx.send(f'Set the volume to **{vol}**%', delete_after=7)
+        await player.invoke_controller()
 
     @commands.command(aliases=['mix'])
     async def shuffle(self, ctx: commands.Context):
