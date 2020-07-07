@@ -741,7 +741,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         entries = [track.title for track in player.queue._queue]
         pages = PaginatorSource(entries=entries)
-        paginator = QueuePages(source=pages, timeout=None, delete_message_after=True)
+        paginator = QueuePages(source=pages, timeout=60.0, delete_message_after=True)
 
         await paginator.start(ctx)
 
