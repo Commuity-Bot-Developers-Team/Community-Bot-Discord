@@ -5,10 +5,9 @@ from ..core.Errors import NotGuildOwner
 
 def is_guild_owner():
     async def predicate(ctx) -> bool:
-        try:
-            return ctx.author == ctx.guild.owner
-        except AttributeError:
-            raise NotGuildOwner
+        if ctx.author == ctx.guild.owner:
+            return True
+        raise NotGuildOwner
 
     return commands.check(predicate)
 
