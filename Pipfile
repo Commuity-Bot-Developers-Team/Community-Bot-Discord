@@ -16,6 +16,9 @@ youtube-dl = "*"
 ffmpeg = "*"
 better-profanity = "*"
 wavelink = "*"
+numpy = "*"
+discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
+pillow = "*"
 
 [requires]
 python_version = "3.8"

@@ -72,7 +72,7 @@ class Moderation(commands.Cog):
     async def temp_mute_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to muted.")
-        await self.moderation_commands.mute_function(ctx.message, targets=members, reason=reason, time=time)
+        await self.moderation_commands.mute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason, time=time.dt)
 
     @commands.command(name='tempban')
     @commands.has_guild_permissions(ban_members=True)

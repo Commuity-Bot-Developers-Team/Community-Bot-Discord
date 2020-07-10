@@ -11,15 +11,16 @@ from .core import Context, Errors
 from .utils.time_bot import human_timedelta
 
 
-class BotClass(commands.AutoShardedBot):
-    def __init__(self, database_url, default_prefix, ssl_required=False):
+class EarlBot(commands.AutoShardedBot):
+    def __init__(self, database_url, default_prefix, ssl_required=False, case_insensitive=False):
+
         # env variables
         self.ssl_required = ssl_required
         self.default_prefix = default_prefix
         self.database_url = database_url
 
         # calling super class
-        super(BotClass, self).__init__(command_prefix=default_prefix)
+        super(EarlBot, self).__init__(command_prefix=default_prefix, case_insensitive=case_insensitive)
 
         # creating instance variables
         self.pg_conn = None
@@ -35,8 +36,12 @@ class BotClass(commands.AutoShardedBot):
         dispatcher = "Bot.core.Dispatcher"
         self.load_extension(dispatcher)
         print("Loaded dispatcher.")
+
         # connecting to database
         self.loop.run_until_complete(self.connection_of_postgres(**{'ssl': 'require'} if self.ssl_required else {}))
+
+        # adding checks
+        self.add_check(self.blacklist_check)
 
         # start the tasks
         self.update_count_data_according_to_guild.start()
@@ -156,6 +161,19 @@ class BotClass(commands.AutoShardedBot):
         else:
             raise error
 
+    async def blacklist_check(self, ctx):
+        if await self.is_owner(ctx.author):
+            return True
+        blacklisted_users = await self.pg_conn.fetchval("""
+        SELECT black_listed_users FROM black_listed_users_data
+        WHERE row_id = 1
+        """)
+        if not blacklisted_users:
+            return True
+        if ctx.author.id not in blacklisted_users:
+            return True
+        raise Errors.BlacklistedMemberError
+
     @tasks.loop(seconds=10)
     async def update_count_data_according_to_guild(self):
         await self.wait_until_ready()
@@ -184,8 +202,8 @@ class BotClass(commands.AutoShardedBot):
                 """, guild.id, self.init_cogs, ["None"])
 
     async def process_commands(self, message):
+        if message.author.bot:
+            return
+
         ctx = await self.get_context(message, cls=Context.Context)
         await self.invoke(ctx)
-
-    async def on_message(self, message):
-        await self.process_commands(message)
