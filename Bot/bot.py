@@ -1,13 +1,13 @@
 import asyncio
+import json
 import os
 import random
-import json
+
 import asyncpg
 import discord
 from discord.ext import commands, tasks
 
-from .core import Context
-from .core import Errors
+from .core import Context, Errors
 from .utils.time_bot import human_timedelta
 
 
@@ -58,7 +58,7 @@ class BotClass(commands.AutoShardedBot):
         return commands.when_mentioned_or(*prefixes)(self, message)
 
     def run(self, *args, **kwargs):
-        super(BotClass, self).run(*args, **kwargs)
+        super(EarlBot, self).run(*args, **kwargs)
 
     async def connection_of_postgres(self, **kwargs):
         def _encode_jsonb(value):
@@ -151,7 +151,7 @@ class BotClass(commands.AutoShardedBot):
             await ctx.send(error.text)
 
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(f"You missing this required argument: {error.param}")
+            await ctx.send(f"You are missing this required argument: {error.param}")
 
         else:
             raise error

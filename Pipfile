@@ -11,7 +11,6 @@ discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",re
 parsedatetime = "*"
 python-dotenv = "*"
 asyncpg = "*"
-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
 python-dateutil = "*"
 youtube-dl = "*"
 ffmpeg = "*"
