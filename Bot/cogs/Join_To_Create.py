@@ -1,7 +1,8 @@
-from discord.ext import commands, tasks
 import asyncio
-import discord
 import typing
+
+import discord
+from discord.ext import commands, tasks
 
 
 class NoVoiceChannel(commands.CheckFailure):
@@ -89,7 +90,7 @@ class Join_To_Create(commands.Cog):
             guild_id = member.guild.id
             query = """
             SELECT * FROM jtc_guilds_data
-            where guild_id = $1
+            WHERE guild_id = $1
             """
             record = await self.bot.pg_conn.fetchrow(query, guild_id)
             guild_settings = GuildVoice(record)
@@ -215,7 +216,7 @@ class Join_To_Create(commands.Cog):
         await channel.set_permissions(role, overwrite=overwrites)
         await ctx.channel.send(f'{ctx.author.mention} Voice chat is now Visible! :ghost:')
 
-    @voice.command(name='ghostmen', aliases=['ghostmem'], usage='(member/role)')
+    @voice.command(name='ghostmen', aliases=['ghostmem'], usage='[member|role]')
     @guild_has_voice_channel()
     @has_voice_channel()
     async def voice_ghostmen(self, ctx, member_or_role: typing.Union[discord.Member, discord.Role]):
@@ -231,7 +232,7 @@ class Join_To_Create(commands.Cog):
         await ctx.channel.send(f'{ctx.author.mention} You have permitted {member_or_role.name}'
                                f' to view your channel. ✅')
 
-    @voice.command(name='permit', aliases=['allow'], usage='(member/role)')
+    @voice.command(name='permit', aliases=['allow'], usage='[member|role]')
     @guild_has_voice_channel()
     @has_voice_channel()
     async def voice_permit(self, ctx, member_or_role: typing.Union[discord.Member, discord.Role]):
@@ -247,7 +248,7 @@ class Join_To_Create(commands.Cog):
             f'{ctx.author.mention} You have permitted {member_or_role.name}'
             f' to have access to the channel. ✅')
 
-    @voice.command(name='reject', aliases=['deny'], usage='(member/role)')
+    @voice.command(name='reject', aliases=['deny'], usage='[member|role]')
     @guild_has_voice_channel()
     @has_voice_channel()
     async def voice_reject(self, ctx, member_or_role: typing.Union[discord.Member, discord.Role]):
@@ -266,7 +267,7 @@ class Join_To_Create(commands.Cog):
             f'{ctx.author.mention} You have rejected {member_or_role.name} to '
             f'have access to the channel. :x:')
 
-    @voice.command(name='limit', usage='(0-99)')
+    @voice.command(name='limit', usage='limit = [0 - 99]')
     @guild_has_voice_channel()
     @has_voice_channel()
     async def voice_limit(self, ctx, limit: int):
@@ -278,7 +279,7 @@ class Join_To_Create(commands.Cog):
             return await ctx.send("This is already limit of your voice channel.")
         await channel.edit(user_limit=limit)
         await ctx.channel.send(f'{ctx.author.mention} You have set the channel limit to'
-                               f' be ' + '{}!'.format(limit))
+                               f' be {limit}!')
         query = """Select * from jtc_settings_data where user_id = $1"""
         check = await self.bot.pg_conn.execute(query, ctx.author.id)
         if check is None:

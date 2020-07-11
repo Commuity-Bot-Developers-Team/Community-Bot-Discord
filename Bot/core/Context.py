@@ -1,5 +1,6 @@
-from discord.ext import commands
 import asyncio
+
+from discord.ext import commands
 
 
 class Context(commands.Context):
@@ -38,8 +39,7 @@ class Context(commands.Context):
             await self.bot.wait_for('raw_reaction_add', check=check, timeout=timeout)
         except asyncio.TimeoutError:
             confirm = None
-
+        finally:
             if delete_after:
                 await msg.delete()
-        finally:
             return confirm

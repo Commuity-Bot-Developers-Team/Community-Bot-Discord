@@ -6,7 +6,7 @@ import parsedatetime as pdt
 from dateutil.relativedelta import relativedelta
 from discord.ext import commands
 
-from .formats import human_join, plural
+from Bot.utils.formats import human_join, plural
 
 
 def indian_standard_time_now() -> Tuple[datetime.datetime, str, float]:
@@ -208,6 +208,12 @@ class UserFriendlyTime(commands.Converter):
             raise
 
 
+def sleep_time_from_dt(dt: datetime.datetime) -> float:
+    return float(int((dt - datetime.datetime.now()).total_seconds()))
+
+    # tz=datetime.timezone(offset=datetime.timedelta(hours=5, minutes=30), name="IST"))
+
+
 def human_timedelta(dt, *, source=None, accuracy=3, brief=False, suffix=True):
     now = source or datetime.datetime.utcnow()
     # Microsecond free zone
@@ -273,3 +279,5 @@ def human_timedelta(dt, *, source=None, accuracy=3, brief=False, suffix=True):
 if __name__ == '__main__':
     print(indian_standard_time_now())
     print(convert_utc_into_ist(utc_date=datetime.datetime.utcnow()))
+    print(sleep_time_from_dt(FutureTime("2d 3h 14m 12s").dt))
+    # print(datetime_to_seconds(indian_standard_time_now()[0]))

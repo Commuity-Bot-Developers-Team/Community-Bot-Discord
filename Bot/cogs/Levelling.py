@@ -1,18 +1,19 @@
 import asyncio
-import math
 import itertools
+import math
 import random
 import time
 from typing import Optional
 
 import discord
+import numpy
 from discord.ext import commands
 
 from ..core.Errors import DisabledCogError
-from ..utils.list_manipulation import insert_or_append, pop_or_remove, replace_or_set
-from ..utils.converters import Converters, bool1, convert_to
-from ..utils.message_interpreter import MessageInterpreter
 from ..utils.checks import is_guild_owner
+from ..utils.converters import Converters, bool1, convert_to
+from ..utils.list_manipulation import insert_or_append, pop_or_remove, replace_or_set
+from ..utils.message_interpreter import MessageInterpreter
 from ..utils.numbers import make_ordinal
 
 
@@ -193,8 +194,15 @@ class Levelling(commands.Cog):
     async def update_level(self, member: discord.Member):
         old_user_level = await self.get_level(member)
         user_xps = await self.get_xps(member)
-        new_user_level = round(math.floor(user_xps ** 0.2))
+        new_user_level = math.floor(((user_xps // 2) + (user_xps * 2)) // 205 ** 0.90)
         return old_user_level, new_user_level
+
+    @staticmethod
+    def get_xps_to_add():
+        xps_nested_list = [[3, 12], [15, 25]]
+        xps_index = numpy.random.choice(len(xps_nested_list), p=[0.8585, 0.1415])
+        xps_list = xps_nested_list[xps_index]
+        return random.choice(xps_list)
 
     async def update_xps(self, member: discord.Member):
         await self.bot.pg_conn.execute("""
@@ -202,7 +210,7 @@ class Levelling(commands.Cog):
                SET xps = $3,
                last_message_time = $4
                WHERE guild_id = $1 AND user_id = $2
-           """, member.guild.id, member.id, int(int(await self.get_xps(member)) + random.randint(1, 5)), time.time())
+           """, member.guild.id, member.id, int(int(await self.get_xps(member)) + self.get_xps_to_add()), time.time())
 
     async def update_data(self, member):
         user_data = await self.bot.pg_conn.fetchrow("""
@@ -328,7 +336,8 @@ class Levelling(commands.Cog):
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             if not isinstance(message.author, discord.User):
                 if message.channel.type != discord.ChannelType.private and (await self.check_whitelist_channel_or_role(message) or not await self.check_blacklist_channel_or_role(message)):
-                    if (int(time.time()) - await self.get_last_message_time(message.author)) > 1 and not str(message.content).startswith(tuple(await self.bot.get_prefix(message))):
+                    if ((int(time.time()) - await self.get_last_message_time(message.author)) > 60) and (
+                    not str(message.content).startswith(tuple(await self.bot.get_prefix(message)))):
                         await self.update_data(message.author)
                         if discord.utils.find(lambda r: r.name == 'Respected People', message.guild.roles) not in message.author.roles and message.author.bot is False:
                             user_category_1 = await self.return_user_category(message.author)
@@ -391,12 +400,14 @@ class Levelling(commands.Cog):
                         WHERE guild_id = $1
                         """, after.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
-
+            try:
                 if len(before.roles) < len(after.roles):
                     new_role_1 = await self.check_new_role(before, after)
                     await self.check_blacklist_status(new_role_1, after)
                 elif len(before.roles) > len(after.roles):
                     await self.check_for_removed_role(before, after)
+            except (ValueError, TypeError, StopIteration, StopAsyncIteration):
+                pass
 
     @commands.group(name="xps", help="Returns your xps!", invoke_without_command=True, aliases=['xp', 'experience'])
     async def xps(self, ctx: commands.Context):
