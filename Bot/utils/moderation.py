@@ -62,14 +62,15 @@ class ModerationCommands:
         if reply:
             await message.channel("Kicked members")
 
-    async def voice_mute_function(self, ctx, action_by, targets: List[discord.Member], reason, time: datetime.datetime = None):
+    async def voice_mute_function(self, ctx, action_by, targets: List[discord.Member], reason, time: datetime.datetime = None, reply=True):
         for target in targets:
             if not (target.guild_permissions.administrator and target.top_role.position > ctx.me.top_role.position and target.top_role.position > action_by.top_role.position):
                 if muted_role := discord.utils.get(target.guild.roles, name="Voice Muted"):
                     await target.add_roles(muted_role, reason=reason)
                 else:
                     return await ctx.send("Muted role cannot be found.")
-            await ctx.send("Muted users")
+        if reply:
+            await ctx.send("Voice Muted users")
         if time:
             if time > datetime.datetime.utcnow():
                 await discord.utils.sleep_until(time)
@@ -84,14 +85,15 @@ class ModerationCommands:
                 else:
                     return await ctx.send("Muted role cannot be found.")
 
-    async def voice_ban_function(self, ctx, action_by, targets: List[discord.Member], reason, time: datetime.datetime = None):
+    async def voice_ban_function(self, ctx, action_by, targets: List[discord.Member], reason, time: datetime.datetime = None, reply=True):
         for target in targets:
             if not (target.guild_permissions.administrator and target.top_role.position > ctx.me.top_role.position and target.top_role.position > action_by.top_role.position):
                 if muted_role := discord.utils.get(target.guild.roles, name="Voice Banned"):
                     await target.add_roles(muted_role, reason=reason)
                 else:
                     return await ctx.send("Muted role cannot be found.")
-            await ctx.send("Muted users")
+        if reply:
+            await ctx.send("Voice Ban users")
         if time:
             if time > datetime.datetime.utcnow():
                 await discord.utils.sleep_until(time)
@@ -107,8 +109,9 @@ class ModerationCommands:
                     return await ctx.send("Muted role cannot be found.")
 
     @staticmethod
-    async def voice_kick_function(ctx, action_by, targets: List[discord.Member], reason):
+    async def voice_kick_function(ctx, action_by, targets: List[discord.Member], reason, reply=True):
         for target in targets:
             if not (target.guild_permissions.administrator and target.top_role.position > ctx.me.top_role.position and target.top_role.position > action_by.top_role.position):
                 await target.move_to(None, reason=reason)
-        await ctx.send("Muted users")
+        if reply:
+            await ctx.send("Voice Kicked users")
