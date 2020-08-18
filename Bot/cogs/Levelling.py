@@ -81,6 +81,13 @@ class Levelling(commands.Cog):
         all_leveling_roles_set_1 = itertools.chain.from_iterable([leveling_roles_set[0] for leveling_roles_set in all_leveling_roles_set])
         return await convert_to(list(all_leveling_roles_set_1), Converters.role_converter, guild)
 
+    async def get_all_leveling_roles_for(self, roles_set, guild):
+        leveling_roles_set = await self.bot.pg_conn.fetchval("""
+        SELECT leveling_roles_ids FROM leveling_role_configuration_data
+        WHERE guild_id = $1 AND name = $2
+        """, guild.id, roles_set)
+        return await convert_to(leveling_roles_set, Converters.role_converter, guild)
+
     async def get_name_from_base_role(self, guild, base_role):
         return await self.bot.pg_conn.fetchval("""
         SELECT name FROM leveling_role_configuration_data
@@ -337,7 +344,7 @@ class Levelling(commands.Cog):
             if not isinstance(message.author, discord.User):
                 if message.channel.type != discord.ChannelType.private and (await self.check_whitelist_channel_or_role(message) or not await self.check_blacklist_channel_or_role(message)):
                     if ((int(time.time()) - await self.get_last_message_time(message.author)) > 60) and (
-                    not str(message.content).startswith(tuple(await self.bot.get_prefix(message)))):
+                            not str(message.content).startswith(tuple(await self.bot.get_prefix(message)))):
                         await self.update_data(message.author)
                         if discord.utils.find(lambda r: r.name == 'Respected People', message.guild.roles) not in message.author.roles and message.author.bot is False:
                             user_category_1 = await self.return_user_category(message.author)
@@ -348,40 +355,50 @@ class Levelling(commands.Cog):
 
     async def check_new_role(self, before, after):
         base_roles = await self.get_base_roles_for(after.guild)
+        print(f"{base_roles=}")
         new_role = next(role for role in after.roles if role not in before.roles)
-        if after.bot is True and new_role.name in await self.get_all_leveling_roles_set_for(after.guild):
+        print(f"{new_role=}")
+        print(f"{await self.get_all_leveling_roles_set_for(after.guild)=}")
+        if after.bot is True and new_role in await self.get_all_leveling_roles_set_for(after.guild):
             await after.remove_roles(new_role)
-        elif new_role.name in base_roles:
+        elif new_role in base_roles:
             # set user xps to 0
             await self.set_level(after, 0)
             await self.set_xps(after, 0)
             leveling_names = await self.get_all_names_of_leveling_roles(after.guild)
-            role_category_1 = leveling_names[base_roles.index(new_role)]
-            await after.add_roles(await self.get_top_role(after.guild, role_category_1))
+            print(f"{leveling_names=}")
+            role_category_1 = leveling_names[base_roles.index(new_role.name)]
+            print(f"{role_category_1=}")
+            leveling_roles = await self.get_all_leveling_roles_for(role_category_1, after.guild)
+            print(f"{leveling_roles=}")
+            # await after.add_roles(leveling_roles[0])
             for base_role in base_roles:
-                if base_role in after.roles and new_role != base_role:
+                if base_role in after.roles and new_role.name != base_role.name:
+                    print(f"{base_role=}")
                     await after.remove_roles(base_role)
+            for leveling_role in leveling_roles:
+                if leveling_role in after.roles:
+                    print(f"{leveling_role=}")
+                    await after.remove_roles(leveling_role)
 
         return new_role
 
     async def check_blacklist_status(self, new_role, after):
-        # top_roles = await self.get_top_roles_for(after.guild)
-        # if new_role.name in top_roles:
-        #     respected_people_status = True
-        #     for i in self.leveling_roles:
-        #         if  not in after.roles:
-        #             respected_people_status = False
-        #     if respected_people_status is True:
-        #         # you can set member out of leveling system but it checks with role name "respected people"
-        #         if discord.utils.get(after.guild.roles, name='Respected People'):
-        #             await after.add_roles(discord.utils.find(lambda r: r.name == 'Respected People', after.guild.roles))
-        #             await self.set_level(after, 0)
-        #             await self.set_xps(after, 0)
-        #         for i in self.leveling_roles:
-        #             for j in self.leveling_prefix:
-        #                 if discord.utils.get(after.guild.roles, name=j + self.leveling_roles[i][0]) in after.roles:
-        #                     await after.remove_roles(discord.utils.find(lambda r: r.name == j + self.leveling_roles[i][0], after.guild.roles))
-        pass
+        top_roles = await self.get_top_roles_for(after.guild)
+        if new_role.name in top_roles:
+            respected_people_status = True
+            for leveling_role in await self.get_top_roles_for(after.guild):
+                if leveling_role not in after.roles:
+                    respected_people_status = False
+            if respected_people_status is True:
+                # you can set member out of leveling system but it checks with role name "respected people"
+                if discord.utils.get(after.guild.roles, name='Respected People'):
+                    await after.add_roles(discord.utils.find(lambda r: r.name == 'Respected People', after.guild.roles))
+                    await self.set_level(after, 0)
+                    await self.set_xps(after, 0)
+                for leveling_role in await self.get_all_leveling_roles_set_for(after.guild):
+                    if leveling_role in after.roles:
+                        await after.remove_roles(leveling_role)
 
     async def check_for_removed_role(self, before, after):
         base_roles = await self.get_base_roles_for(after.guild)
@@ -591,7 +608,7 @@ class Levelling(commands.Cog):
 
         embed.description = msg
         embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=str(ctx.author.avatar_url))
         await ctx.send(embed=embed)
 
     @level_up_message.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
@@ -653,7 +670,7 @@ class Levelling(commands.Cog):
         embed.title = "Available leveling roles sets in this server!"
         msg = ""
         for role_index, leveling_roles_set in enumerate(leveling_roles_set_list, start=1):
-            msg += f"{role_index}. {leveling_roles_set}"
+            msg += f"{role_index}. {leveling_roles_set}\n"
         embed.description = msg
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
@@ -830,7 +847,7 @@ class Levelling(commands.Cog):
 
         embed.description = msg
         embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=str(ctx.author.avatar_url))
         await ctx.send(embed=embed)
 
     @leveling_blacklist_role.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
@@ -884,7 +901,7 @@ class Levelling(commands.Cog):
 
         embed.description = msg
         embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=str(ctx.author.avatar_url))
         await ctx.send(embed=embed)
 
     @leveling_blacklist_channel.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
@@ -938,7 +955,7 @@ class Levelling(commands.Cog):
 
         embed.description = msg
         embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=str(ctx.author.avatar_url))
         await ctx.send(embed=embed)
 
     @leveling_whitelist_channel.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")
@@ -992,7 +1009,7 @@ class Levelling(commands.Cog):
 
         embed.description = msg
         embed.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=str(ctx.author.avatar_url))
         await ctx.send(embed=embed)
 
     @leveling_whitelist_role.command(name="add", aliases=['+'], help="Adds a level up message to the last index if index not given else insert in the passed index.")

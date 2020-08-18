@@ -4,6 +4,7 @@ import aiohttp
 import discord
 from PIL import Image
 from discord.ext import commands
+from discord.ext.alternatives import asset_converter  # noqa
 
 from Bot.core.Errors import DisabledCogError
 
@@ -25,17 +26,16 @@ class Emojis(commands.Cog):
         raise DisabledCogError
 
     @commands.command(name="avatar_emoji")
-    async def avatar_emoji(self, ctx: commands.Context, url: str):
-        print(url)
-        print(str(url))
-
+    async def avatar_emoji(self, ctx: commands.Context):
+        # discord.Guild().create_custom_emoji()
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as request:
+            async with session.get(str(ctx.author.avatar_url)) as request:
                 image_file = Image.open(BytesIO(await request.read())).convert("RGB")
                 _file_ = BytesIO()
                 image_file.save(_file_, "PNG")
                 _file_.seek(0)
-                await ctx.send(file=discord.File(_file_, filename="image.png"))
+                await ctx.guild.create_custom_emoji(name=f"{ctx.author.display_name}", image=bytes(_file_))
+                # await ctx.send(file=discord.File(_file_, filename="image.png"))
 
 
 def setup(bot):

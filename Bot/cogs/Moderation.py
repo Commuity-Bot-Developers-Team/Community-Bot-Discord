@@ -26,63 +26,63 @@ class Moderation(commands.Cog):
             return True
         raise DisabledCogError
 
-    @commands.command(name='ban')
+    @commands.command(name='server_ban', help="Bans the user from the server.")
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_guild_permissions(ban_members=True)
-    async def ban_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+    async def guild_ban_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to banned.")
         await self.moderation_commands.ban_function(message=ctx.message, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name='kick')
+    @commands.command(name='server_kick', help="Kicks the user from the server.")
     @commands.has_guild_permissions(kick_members=True)
     @commands.bot_has_guild_permissions(kick_members=True)
-    async def kick_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+    async def guild_kick_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to kicked.")
         await self.moderation_commands.kick_function(message=ctx.message, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="unban")
+    @commands.command(name="server_unban", help="Unbans the user from the server.")
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_guild_permissions(ban_members=True)
-    async def unban_command(self, ctx, members: commands.Greedy[discord.User], *, reason):
+    async def guild_unban_command(self, ctx, members: commands.Greedy[discord.User], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to unbanned.")
         await self.moderation_commands.unban_function(ctx.message, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="mute")
+    @commands.command(name="server_mute", help="Mutes the user in the server.")
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def mute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+    async def guild_mute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to muted.")
         await self.moderation_commands.mute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="unmute")
+    @commands.command(name="server_unmute", help="Unmutes the user in the server.")
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def unmute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+    async def guild_unmute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to unmuted.")
         await self.moderation_commands.unmute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="tempmute")
+    @commands.command(name="server_tempmute", help="Temporarily mutes the user in the server.")
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def temp_mute_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
+    async def guild_temp_mute_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to muted.")
         await self.moderation_commands.mute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason, time=time.dt)
 
-    @commands.command(name='tempban')
+    @commands.command(name='server_tempban', help="Temporarily bans the user from the server.")
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_guild_permissions(ban_members=True)
-    async def temp_ban_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
+    async def guild_temp_ban_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to temporarily banned.")
         await self.moderation_commands.ban_function(message=ctx.message, action_by=ctx.author, targets=members, reason=reason, time=time.dt)
 
-    @commands.command(name="voice_mute")
+    @commands.command(name="voice_mute", help="Mutes the user in the voice channel.")
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def voice_mute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
@@ -90,7 +90,7 @@ class Moderation(commands.Cog):
             return await ctx.send("You need to say which members needs to muted.")
         await self.moderation_commands.voice_mute_function(ctx, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="voice_unmute")
+    @commands.command(name="voice_unmute", help="Unmutes the user in the voice channel.")
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def voice_unmute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
@@ -98,7 +98,7 @@ class Moderation(commands.Cog):
             return await ctx.send("You need to say which members needs to unmuted.")
         await self.moderation_commands.voice_unmute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="voice_ban")
+    @commands.command(name="voice_ban", help="Bans the user from using the voice channel.")
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def voice_ban_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
@@ -106,7 +106,7 @@ class Moderation(commands.Cog):
             return await ctx.send("You need to say which members needs to muted.")
         await self.moderation_commands.voice_ban_function(ctx, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="voice_unban")
+    @commands.command(name="voice_unban", help="Unbans the user from using the voice channel.")
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def voice_unban_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
@@ -114,13 +114,85 @@ class Moderation(commands.Cog):
             return await ctx.send("You need to say which members needs to unmuted.")
         await self.moderation_commands.voice_unban_function(ctx, action_by=ctx.author, targets=members, reason=reason)
 
-    @commands.command(name="voice_kick")
+    @commands.command(name="voice_kick", help="Kicks the user from the voice channel.")
     @commands.has_guild_permissions(connect=True, speak=True)
     @commands.bot_has_guild_permissions(connect=True, speak=True)
     async def voice_kick_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
         if not members:
             return await ctx.send("You need to say which members needs to unmuted.")
         await self.moderation_commands.voice_kick_function(ctx, action_by=ctx.author, targets=members, reason=reason)
+
+    @commands.command(name="voice_tempmute", help="Temporarily mutes the user in the server.")
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def voice_temp_mute_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to muted.")
+        await self.moderation_commands.mute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason, time=time.dt)
+
+    @commands.command(name='voice_tempban', help="Temporarily bans the user from the server.")
+    @commands.has_guild_permissions(ban_members=True)
+    @commands.bot_has_guild_permissions(ban_members=True)
+    async def voice_temp_ban_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to temporarily banned.")
+        await self.moderation_commands.voice_ban_function(message=ctx.message, action_by=ctx.author, targets=members, reason=reason, time=time.dt)
+
+    @commands.command(name="text_mute")
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def text_mute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to muted.")
+        await self.moderation_commands.text_mute_function(ctx, action_by=ctx.author, targets=members, reason=reason)
+
+    @commands.command(name="text_unmute")
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def text_unmute_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to unmuted.")
+        await self.moderation_commands.text_unmute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason)
+
+    @commands.command(name="text_ban")
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def text_ban_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to muted.")
+        await self.moderation_commands.text_ban_function(ctx, action_by=ctx.author, targets=members, reason=reason)
+
+    @commands.command(name="text_unban")
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def text_unban_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to unmuted.")
+        await self.moderation_commands.text_unban_function(ctx, action_by=ctx.author, targets=members, reason=reason)
+
+    @commands.command(name="text_kick")
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def text_kick_command(self, ctx, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to unmuted.")
+        await self.moderation_commands.text_kick_function(ctx, action_by=ctx.author, targets=members, reason=reason)
+
+    @commands.command(name="text_tempmute", help="Temporarily mutes the user in the server.")
+    @commands.has_guild_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def text_temp_mute_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to muted.")
+        await self.moderation_commands.text_mute_function(ctx.message, action_by=ctx.author, targets=members, reason=reason, time=time.dt)
+
+    @commands.command(name='text_tempban', help="Temporarily bans the user from the server.")
+    @commands.has_guild_permissions(ban_members=True)
+    @commands.bot_has_guild_permissions(ban_members=True)
+    async def text_temp_ban_command(self, ctx, time: FutureTime, members: commands.Greedy[discord.Member], *, reason):
+        if not members:
+            return await ctx.send("You need to say which members needs to temporarily banned.")
+        await self.moderation_commands.text_ban_function(message=ctx.message, action_by=ctx.author, targets=members, reason=reason, time=time.dt)
 
     @commands.command(name="clear", aliases=["purge"])
     @commands.has_guild_permissions(manage_messages=True)

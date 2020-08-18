@@ -20,10 +20,9 @@ class Economy(commands.Cog):
             if not check:
                 await self.bot.pg_conn.execute("INSERT INTO users_data (coins,xp,level,user_id,passive,bank,bread,messages) VALUES (0,0,0,$1,'off',0,0,0)", user_id)
 
-    """registers a new user in the db """
-
     @commands.Cog.listener()
     async def on_member_join(self, member):
+        """Registers a new user in the db."""
         check = await self.bot.pg_conn.fetch("SELECT * FROM users_data WHERE user_id = $1", member.id)
 
         if not check:
@@ -33,6 +32,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     async def bal(self, ctx):
+        """Returns the balance of your account."""
         member_id = ctx.author.id
         user_data = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", member_id)
         coins = user_data["coins"]
@@ -49,6 +49,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     async def backpack(self, ctx):
+        """Shows your backpack and shows the items you bought."""
         member_id = ctx.author.id
         user_data = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = ?", member_id)
         bread = user_data["bread"]
@@ -64,6 +65,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     async def rob(self, ctx, member: discord.Member):
+        """Don't rob, if you don't want. If you really want to rob, please, be careful."""
         victim = member.id
         member_id = ctx.author.id
         passive_check = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", member_id)
@@ -96,7 +98,7 @@ class Economy(commands.Cog):
             else:
                 e = discord.Embed(
                     colour=discord.Colour.red(),
-                    title=f"{victim.name} has passive enabled!!"
+                    title=f"{victim.name} has passive enabled!!"  # noqa
                 )
                 await ctx.send(embed=e)
         else:
@@ -110,6 +112,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     async def passive(self, ctx, onoff: bool1):
+        """Changes the passive mode."""
         user = ctx.author.id
         if onoff:
             on = discord.Embed(
@@ -133,6 +136,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     async def gift(self, ctx, member: discord.Member, amount):
+        """Wanna give some gifts to someone? Give it via this command."""
         user = ctx.author.id
         member_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", member.id)
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
@@ -168,6 +172,7 @@ class Economy(commands.Cog):
 
     @commands.command(aliases=["dep", "d"])
     async def deposit(self, ctx, amount):
+        """Deposit that f***ing money to your bank."""
         user = ctx.author.id
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
         coins = user_info["coins"]
@@ -195,6 +200,7 @@ class Economy(commands.Cog):
 
     @commands.command(aliases=["with", "w"])
     async def withdraw(self, ctx, amount):
+        """Withdraw that f***ing money from the bank."""
         user = ctx.author.id
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
         coins = user_info["coins"]
@@ -222,8 +228,9 @@ class Economy(commands.Cog):
     """command for searching areas for money"""
 
     @commands.command()
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)  # noqa
     async def search(self, ctx):
+        """Search for that f***ing money."""
         user = ctx.author.id
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
         passive = user_info["passive"]
@@ -381,8 +388,9 @@ class Economy(commands.Cog):
     """command for begging money"""
 
     @commands.command()
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)  # noqa
     async def beg(self, ctx):
+        """Do you really need to beg for that f***ing money? Don't beg, work hard."""
         user = ctx.message.author.id
         rnum = randint(0, 650)
         options = [f"Elon Musk gave you {rnum}! Why didn't he kill you?", f"Viper gave you {rnum}! I didn't know bots can talk???",
@@ -483,8 +491,9 @@ class Economy(commands.Cog):
     """command for betting"""
 
     @commands.command()
-    @commands.cooldown(1, 20, commands.BucketType.user)
+    @commands.cooldown(1, 20, commands.BucketType.user)  # noqa
     async def bet(self, ctx, num):
+        """Wanna bet with friends?, Please be careful for that."""
         user = ctx.author.id
 
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
@@ -533,8 +542,9 @@ class Economy(commands.Cog):
     """command for working"""
 
     @commands.command()
-    @commands.cooldown(1, 3600, commands.BucketType.user)
+    @commands.cooldown(1, 3600, commands.BucketType.user)  # noqa
     async def work(self, ctx):
+        """Work hard. Work hard. Work hard."""
         user = ctx.message.author.id
         rnum = randint(0, 3000)
         jobs = [f"You worked as a software developer and earned: `{rnum}` coins", f"You worked as a dentist and accidentally pulled out a tooth and earned `{rnum}` coins ",
@@ -568,6 +578,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     async def shop(self, ctx):
+        """Having so much money? Then shop someone items."""
         user = ctx.author.id
         user_info = await self.bot.pg_conn.fetchrow("SELECT * FROM users_data WHERE user_id = $1", user)
         coins = user_info["coins"]

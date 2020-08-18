@@ -21,6 +21,7 @@ discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
 pillow = "*"
 discord-ext-alternatives = "*"
 discord-flags = "*"
+"discord.py-stubs" = "*"
 
 [requires]
 python_version = "3.8"

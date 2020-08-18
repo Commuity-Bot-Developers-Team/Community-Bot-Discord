@@ -3,7 +3,7 @@ from io import StringIO
 
 from discord.ext import commands
 
-from ..bot import BotClass
+from ..bot import EarlBot
 
 CODE_TEMPLATE = """
 async def _func():
@@ -12,7 +12,7 @@ async def _func():
 
 
 class EvaluateInterpreter(InteractiveInterpreter):
-    def __init__(self, bot: BotClass):
+    def __init__(self, bot: EarlBot):
         locals_ = {'bot': bot}
         super().__init__(locals_)
 

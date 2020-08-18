@@ -49,7 +49,7 @@ class EarlBot(commands.AutoShardedBot):
 
     async def get_prefix(self, message):
         if message.channel.type == discord.ChannelType.private:
-            return commands.when_mentioned_or(*self.default_prefix)(self, message)
+            return commands.when_mentioned_or(*self.default_prefix)(self, message)  # noqa
         prefixes = await self.pg_conn.fetchval("""
         SELECT prefixes FROM prefix_data
         WHERE guild_id = $1
@@ -59,8 +59,8 @@ class EarlBot(commands.AutoShardedBot):
             INSERT INTO prefix_data (guild_id, prefixes)
             VALUES ($1, $2)
             """, message.guild.id, self.default_prefix)
-            return commands.when_mentioned_or(*self.default_prefix)(self, message)
-        return commands.when_mentioned_or(*prefixes)(self, message)
+            return commands.when_mentioned_or(*self.default_prefix)(self, message)  # noqa
+        return commands.when_mentioned_or(*prefixes)(self, message)  # noqa
 
     def run(self, *args, **kwargs):
         super(EarlBot, self).run(*args, **kwargs)
@@ -80,7 +80,7 @@ class EarlBot(commands.AutoShardedBot):
     async def on_ready(self):
         await self.wait_until_ready()
         await asyncio.sleep(5)
-        await self.change_presence(activity=discord.Activity(name="earlbot.xyz", type=discord.ActivityType.listening), status=discord.Status.dnd)
+        await self.change_presence(activity=discord.Activity(name="earlbot.xyz", type=discord.ActivityType.listening), status=discord.Status.dnd)  # noqa
         random_user = random.choice(self.users)
         await self.is_owner(random_user)
         print(f'\n\n{self.user} (id: {self.user.id}) is connected to the following guilds:\n', end="")

@@ -31,6 +31,6 @@ async def apply_links(last_message: discord.Message, recent_messages: List[disco
             f"sent {counter['total_links']} links in {config['interval']}s",
             (last_message.author,),
             relevant_messages,
-            f"Over links is denied in this server, you are temp mute for 3hrs because you sent, more than {config['max']}. "
+            f"Links are denied in this server, you are temp mute for 3hrs because you sent, more than {config['max']}. "
         )
     return None

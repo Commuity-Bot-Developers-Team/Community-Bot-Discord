@@ -9,7 +9,7 @@ def is_guild_owner():
             return True
         raise NotGuildOwner
 
-    return commands.check(predicate)
+    return commands.check(predicate)  # noaa
 
 
 def is_administrator_or_permission(**perms):
@@ -19,7 +19,7 @@ def is_administrator_or_permission(**perms):
         except AttributeError:
             raise NotGuildOwner
 
-    return commands.check(predicate)
+    return commands.check(predicate)  # noqa
 
 
 def is_mod_or_permission(**perms):
@@ -29,4 +29,4 @@ def is_mod_or_permission(**perms):
         except AttributeError:
             raise NotGuildOwner
 
-    return commands.check(predicate)
+    return commands.check(predicate)  # noqa

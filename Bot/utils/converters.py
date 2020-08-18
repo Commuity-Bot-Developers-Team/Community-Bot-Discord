@@ -1,3 +1,4 @@
+import re
 from typing import Callable, List, Union
 
 import discord
@@ -41,3 +42,19 @@ class Converters:
     @staticmethod
     async def message_converter(channel: discord.TextChannel, message_id: int) -> discord.Message:
         return await channel.fetch_message(message_id)
+
+
+_id_regex = re.compile(r"([0-9]{15,21})$")
+_mention_regex = re.compile(r"<@!?([0-9]{15,21})>$")
+
+
+class RawUserIds(commands.Converter):
+    async def convert(self, ctx, argument):
+        # This is for the hackban and unban commands, where we receive IDs that
+        # are most likely not in the guild.
+        # Mentions are supported, but most likely won't ever be in cache.
+
+        if match := _id_regex.match(argument) or _mention_regex.match(argument):
+            return int(match.group(1))
+
+        raise commands.BadArgument("{} doesn't look like a valid user ID.".format(argument))

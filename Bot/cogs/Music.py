@@ -24,14 +24,15 @@ This example uses the following which must be installed prior to running:
 --------------------------------------------------------------------------------
 """
 import asyncio
-import async_timeout
 import copy
 import datetime
-import discord
 import math
 import random
 import re
 import typing
+
+import async_timeout
+import discord
 import wavelink
 from discord.ext import commands, menus
 
@@ -189,7 +190,7 @@ class QueuePages(menus.MenuPages):
             if payload.event_type == 'REACTION_ADD':
                 await self.bot.http.remove_reaction(
                     payload.channel_id, payload.message_id,
-                    discord.Message._emoji_reaction(payload.emoji), payload.member.id
+                    discord.Message._emoji_reaction(payload.emoji), payload.member.id  # noqa
                 )
             elif payload.event_type == 'REACTION_REMOVE':
                 return
@@ -210,7 +211,7 @@ class InteractiveController(menus.Menu):
             if payload.event_type == 'REACTION_ADD':
                 await self.bot.http.remove_reaction(
                     payload.channel_id, payload.message_id,
-                    discord.Message._emoji_reaction(payload.emoji), payload.member.id
+                    discord.Message._emoji_reaction(payload.emoji), payload.member.id  # noqa
                 )
             elif payload.event_type == 'REACTION_REMOVE':
                 return

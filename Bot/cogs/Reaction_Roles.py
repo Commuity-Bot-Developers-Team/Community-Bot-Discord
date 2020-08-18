@@ -136,7 +136,7 @@ class Reaction_Roles(commands.Cog):
             role = Converters.role_converter(guild, role_id)
             if role:
                 if payload.event_type == "REACTION_ADD":
-                    await user.add_roles(role)
+                    await user.add_roles(role)  # noqa
         else:
             await message.remove_reaction(payload.emoji, user)
 
