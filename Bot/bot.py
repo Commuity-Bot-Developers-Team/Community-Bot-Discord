@@ -1,24 +1,26 @@
 import asyncio
+import json
 import os
 import random
-import json
+
 import asyncpg
 import discord
 from discord.ext import commands, tasks
-from .core import Context
 
-from .utils.time_bot import format_duration
+from .core import Context, Errors
+from .utils.time_bot import human_timedelta
 
 
-class BotClass(commands.AutoShardedBot):
-    def __init__(self, database_url, default_prefix, ssl_required=False):
+class EarlBot(commands.AutoShardedBot):
+    def __init__(self, database_url, default_prefix, ssl_required=False, case_insensitive=False):
+
         # env variables
         self.ssl_required = ssl_required
         self.default_prefix = default_prefix
         self.database_url = database_url
 
         # calling super class
-        super(BotClass, self).__init__(command_prefix=default_prefix)
+        super(EarlBot, self).__init__(command_prefix=default_prefix, case_insensitive=case_insensitive)
 
         # creating instance variables
         self.pg_conn = None
@@ -34,8 +36,12 @@ class BotClass(commands.AutoShardedBot):
         dispatcher = "Bot.core.Dispatcher"
         self.load_extension(dispatcher)
         print("Loaded dispatcher.")
+
         # connecting to database
         self.loop.run_until_complete(self.connection_of_postgres(**{'ssl': 'require'} if self.ssl_required else {}))
+
+        # adding checks
+        self.add_check(self.blacklist_check)
 
         # start the tasks
         self.update_count_data_according_to_guild.start()
@@ -57,7 +63,7 @@ class BotClass(commands.AutoShardedBot):
         return commands.when_mentioned_or(*prefixes)(self, message)
 
     def run(self, *args, **kwargs):
-        super(BotClass, self).run(*args, **kwargs)
+        super(EarlBot, self).run(*args, **kwargs)
 
     async def connection_of_postgres(self, **kwargs):
         def _encode_jsonb(value):
@@ -122,6 +128,12 @@ class BotClass(commands.AutoShardedBot):
         elif isinstance(error, commands.CheckAnyFailure):
             await ctx.send("".join(error.args))
 
+        elif isinstance(error, Errors.DisabledCogError):
+            await ctx.send("The module which contains this command is disabled.")
+
+        elif isinstance(error, Errors.BlacklistedMemberError):
+            await ctx.send("You're blacklisted from using from using this bot or specific command.")
+
         elif isinstance(error, commands.CheckFailure):
             await ctx.send("".join(error.args))
 
@@ -131,20 +143,36 @@ class BotClass(commands.AutoShardedBot):
         elif isinstance(error, commands.NotOwner):
             await ctx.send("You're not a owner till now!")
 
+        elif isinstance(error, Errors.NotGuildOwner):
+            await ctx.send("You're not a guild owner.")
+
         elif isinstance(error, commands.NoPrivateMessage):
             await ctx.send("You can't send this commands here!")
 
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"The command you send is on cooldown! Try again after {format_duration(int(error.retry_after))}.")
+            await ctx.send(f"The command you send is on cooldown! Try again after {human_timedelta(int(error.retry_after))}.")
 
         elif isinstance(error, discord.Forbidden):
             await ctx.send(error.text)
 
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(f"You missing this required argument: {error.param}")
+            await ctx.send(f"You are missing this required argument: {error.param}")
 
         else:
             raise error
+
+    async def blacklist_check(self, ctx):
+        if await self.is_owner(ctx.author):
+            return True
+        blacklisted_users = await self.pg_conn.fetchval("""
+        SELECT black_listed_users FROM black_listed_users_data
+        WHERE row_id = 1
+        """)
+        if not blacklisted_users:
+            return True
+        if ctx.author.id not in blacklisted_users:
+            return True
+        raise Errors.BlacklistedMemberError
 
     @tasks.loop(seconds=10)
     async def update_count_data_according_to_guild(self):

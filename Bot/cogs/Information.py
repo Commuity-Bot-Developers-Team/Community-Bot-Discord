@@ -3,6 +3,8 @@ import datetime
 import discord
 from discord.ext import commands
 
+from Bot.core.Errors import DisabledCogError
+
 
 class Information(commands.Cog):
 
@@ -19,7 +21,7 @@ class Information(commands.Cog):
                 """, ctx.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             return True
-        return False
+        raise DisabledCogError
 
     @commands.command()
     async def ping(self, ctx):

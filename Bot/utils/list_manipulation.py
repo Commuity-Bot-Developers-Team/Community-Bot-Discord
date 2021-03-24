@@ -109,3 +109,9 @@ def replace_or_set(list_1: List[Any], value: Any, index: int) -> Tuple[List[Any]
         raise IndexError("The index you sent is invalid!")
     list_1[index] = value
     return list_1, value, index
+
+
+def get_key_from_value(dict_: dict, value: Any):
+    for key in dict_.keys():
+        if dict_[key] == value:
+            return key

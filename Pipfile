@@ -4,18 +4,21 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pylint = "*"
 
 [packages]
 discord-py = {extras = ["voice"],git = "https://github.com/Rapptz/discord.py",ref = "master"}
 parsedatetime = "*"
 python-dotenv = "*"
 asyncpg = "*"
-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
 python-dateutil = "*"
 youtube-dl = "*"
 ffmpeg = "*"
 better-profanity = "*"
 wavelink = "*"
+numpy = "*"
+discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
+pillow = "*"
 
 [requires]
 python_version = "3.8"

@@ -272,6 +272,7 @@ class InteractiveController(menus.Menu):
         ctx.command = command
 
         await self.bot.invoke(ctx)
+        await self.player.invoke_controller()
 
     @menus.button(emoji='\u23ED')
     async def skip_command(self, payload: discord.RawReactionActionEvent):
@@ -326,6 +327,7 @@ class InteractiveController(menus.Menu):
         ctx.command = command
 
         await self.bot.invoke(ctx)
+        await self.player.invoke_controller()
 
 
 class PaginatorSource(menus.ListPageSource):

@@ -8,6 +8,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
+from ..core.Errors import DisabledCogError
 from ..utils.list_manipulation import insert_or_append, pop_or_remove, replace_or_set
 from ..utils.converters import Converters, bool1, convert_to
 from ..utils.message_interpreter import MessageInterpreter
@@ -29,7 +30,7 @@ class Levelling(commands.Cog):
                 """, ctx.guild.id)
         if f"Bot.cogs.{self.qualified_name}" in enabled:
             return True
-        return False
+        raise DisabledCogError
 
     # role config helper functions
     async def get_base_role(self, guild, name):
